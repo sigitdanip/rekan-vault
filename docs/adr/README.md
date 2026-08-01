@@ -42,7 +42,7 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 | RV-DEC-P2-0002 | Authentication: Email magic link login with administrator-created memberships | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0002_first-login-magic-link-admin-memberships.md` |
 | RV-DEC-P2-0003 | Authorization: Strict isolation of Supabase service-role key (Risk R-003) | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0003_service-role-key-isolation.md` |
 | RV-DEC-P2-0004 | Security: Credential key custody with runtime envelope encryption | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0004_credential-key-custody-envelope-encryption.md` |
-| RV-DEC-P2-0005 | Architecture: Introduce Redis as dedicated job broker for Phase 2 | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0005_job-engine-redis-broker.md` |
+| RV-DEC-P2-0005 | Architecture: PostgreSQL-backed durable job queue (FOR UPDATE SKIP LOCKED) without Redis | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0005_job-engine-postgres-lease.md` |
 | RV-DEC-P2-0006 | Storage: Local VPS filesystem for normalized extracted artifacts | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0006_artifact-storage-vps-filesystem.md` |
 
 ## How this index works

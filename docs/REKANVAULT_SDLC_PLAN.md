@@ -651,7 +651,8 @@ All Phase 2 architectural decisions are locked and recorded in `docs/adr/`:
 - `RV-DEC-P2-0002`: [First login method](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0002_first-login-magic-link-admin-memberships.md) — Email magic link login + admin membership provisioning.
 - `RV-DEC-P2-0003`: [Service-role key isolation](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0003_service-role-key-isolation.md) — Restrict `RV_SUPABASE_SECRET_KEY` strictly to DB migrations & admin workers (Risk R-003).
 - `RV-DEC-P2-0004`: [Credential key custody](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0004_credential-key-custody-envelope-encryption.md) — Runtime envelope encryption (active + previous key in deployment secrets).
-- `RV-DEC-P2-0005`: [Job engine implementation](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0005_job-engine-redis-broker.md) — Introduce Redis (Celery / BullMQ) as dedicated background job broker.
+- `RV-DEC-P2-0005`: [Job engine implementation](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0005_job-engine-postgres-lease.md) — PostgreSQL-backed durable job queue (`FOR UPDATE SKIP LOCKED`) without Redis.
+- `RV-DEC-P2-0006`: [Artifact storage backend](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0006_artifact-storage-vps-filesystem.md) — Local VPS filesystem (`filesystem`) under `RV_ARTIFACT_STORAGE_PATH`.
 
 ---
 
