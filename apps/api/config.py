@@ -31,11 +31,13 @@ class Settings(BaseSettings):
     RV_SUPABASE_JWT_AUDIENCE: str = "authenticated"
     RV_SUPABASE_SECRET_KEY: str = ""  # Admin / Migration worker only (Risk R-003)
 
-    # Phase 2: Credential Encryption (AES-GCM)
+    # Phase 2: Credential Encryption (AES-GCM - RV-DEC-P2-0004)
+    RV_CREDENTIAL_KEY_ACTIVE: str = "key-1:dGVzdF9rZXlfMzJfYnl0ZXNfYmFzZTY0X2VuY29kZWRfMQ=="
+    RV_CREDENTIAL_KEY_PREVIOUS: str = ""
     RV_CREDENTIAL_ENCRYPTION_KEYS: str = ""
     RV_ACTIVE_CREDENTIAL_KEY_ID: str = "key-1"
 
-    # Phase 2: Worker & Job Queue
+    # Phase 2: Worker & Job Engine (RV-DEC-P2-0005, RV-DEC-P2-0006)
     RV_WORKER_QUEUES: str = "default"
     RV_WORKER_CONCURRENCY: int = 2
     RV_JOB_POLL_INTERVAL_MS: int = 1000
@@ -47,4 +49,5 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
 
