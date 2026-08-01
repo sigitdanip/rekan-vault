@@ -34,6 +34,10 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 | RV-DEC-0015 | Golden-set ownership and change-review process: Sigit owns, changes require a stated reason | P0 | Approved | 2026-07-31 | `RekanVault_ADR_P0_0015_golden-set-ownership.md` |
 | RV-DEC-0016 | Release evidence folder structure: `docs/release-evidence/`, one folder per phase, sub-folders per release candidate in P11 | P0 | Approved | 2026-07-31 | `RekanVault_ADR_P0_0016_release-evidence-structure.md` |
 | RV-DEC-0017 | Frozen non-goals for `0.1.0`: 12 from Product Build Plan §8.3 + 4 surfaced during P0 | P0 | Approved | 2026-07-31 | `RekanVault_ADR_P0_0017_frozen-non-goals.md` |
+| RV-DEC-P1-0001 | Repository visibility mechanics: Private until P11 release candidate | P1 | Approved | 2026-08-01 | `RekanVault_ADR_P1_0001_repo-visibility-private.md` |
+| RV-DEC-P1-0002 | Monorepo orchestration: Plain uv and pnpm scripts without Turborepo | P1 | Approved | 2026-08-01 | `RekanVault_ADR_P1_0002_monorepo-orchestration-uv-pnpm.md` |
+| RV-DEC-P1-0003 | UI visual direction: Quiet intelligence workspace baseline | P1 | Approved | 2026-08-01 | `RekanVault_ADR_P1_0003_ui-visual-direction-quiet-intelligence.md` |
+| RV-DEC-P1-0004 | Legacy artifact retention & canonical package namespace | P1 | Approved | 2026-08-01 | `RekanVault_ADR_P1_0004_legacy-artifact-retention-canonical-package.md` |
 
 ## How this index works
 
@@ -44,9 +48,7 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 
 ## Open / not yet recorded
 
-All 9 P0 to-do items are now complete as of RV-DEC-0017 (2026-07-31). Remaining known upcoming decisions belong to later phases:
-
-- P1 decisions: repo visibility mechanics, monorepo tooling, UI visual direction, legacy artifact retention
+All P0 and P1 decisions are now recorded and approved as of RV-DEC-P1-0004 (2026-08-01). Remaining known upcoming decisions belong to P2+:
 
 ## Cross-ADR alignment log
 

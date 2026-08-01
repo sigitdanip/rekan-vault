@@ -553,14 +553,13 @@ Quality: `pytest`, `pytest-asyncio`, `pytest-cov`, `respx`, `hypothesis`, `ruff`
 
 `P1-GATE`: clean checkout installs reproducibly, builds all applications, exports valid contracts, and passes inherited plus new foundation tests.
 
-###   Open Decisions (Delete section if decision already recorded as ADR) (Delete section if decision already recorded as  ADR)  
+### Locked ADRs
 
-| Decision | Recommended default | Needed by | Effect |
-|---|---|---|---|
-| Repository visibility | Private until P11 release candidate | P1 creation | Secret/privacy and licensing exposure |
-| Monorepo orchestration | Use plain `uv` + pnpm scripts; do not add Turborepo yet | P1 | Complexity and build caching |
-| UI visual direction | Quiet intelligence workspace: dense but calm, desktop-first and responsive | P1 shell | Component tokens and information density |
-| Legacy artifact retention | Preserve original release ZIP; do not preserve legacy runtime namespace | P1 migration | Clean architecture vs migration trace |
+All Phase 1 architectural decisions are locked and recorded in `docs/adr/`:
+- `RV-DEC-P1-0001`: [Repository visibility mechanics](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P1_0001_repo-visibility-private.md) — Private until P11 release candidate.
+- `RV-DEC-P1-0002`: [Monorepo orchestration](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P1_0002_monorepo-orchestration-uv-pnpm.md) — Plain `uv` + `pnpm` scripts without Turborepo.
+- `RV-DEC-P1-0003`: [UI visual direction](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P1_0003_ui-visual-direction-quiet-intelligence.md) — Quiet intelligence workspace (dark mode, dense/calm layout, desktop-first).
+- `RV-DEC-P1-0004`: [Legacy artifact retention](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P1_0004_legacy-artifact-retention-canonical-package.md) — Preserve static release ZIP archive; single canonical `rekanvault` package at runtime.
 
 ---
 

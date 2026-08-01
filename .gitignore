@@ -41,10 +41,10 @@ Thumbs.db
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# Tooling runtime state
+# Agents, Skills, Prompts
 .omx/
 .omg/
-.codex/*
+.codex/
 !.codex/agents/
 !.codex/agents/**
 !.codex/skills/
@@ -52,3 +52,6 @@ Thumbs.db
 .codex/skills/.system/**
 !.codex/prompts/
 !.codex/prompts/**
+.agents/
+skills_list.txt
+
