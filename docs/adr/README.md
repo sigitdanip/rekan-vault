@@ -38,6 +38,11 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 | RV-DEC-P1-0002 | Monorepo orchestration: Plain uv and pnpm scripts without Turborepo | P1 | Approved | 2026-08-01 | `RekanVault_ADR_P1_0002_monorepo-orchestration-uv-pnpm.md` |
 | RV-DEC-P1-0003 | UI visual direction: Quiet intelligence workspace baseline | P1 | Approved | 2026-08-01 | `RekanVault_ADR_P1_0003_ui-visual-direction-quiet-intelligence.md` |
 | RV-DEC-P1-0004 | Legacy artifact retention & canonical package namespace | P1 | Approved | 2026-08-01 | `RekanVault_ADR_P1_0004_legacy-artifact-retention-canonical-package.md` |
+| RV-DEC-P2-0001 | Database environment: Dedicated Supabase project and schema isolation | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0001_database-environment-supabase-isolation.md` |
+| RV-DEC-P2-0002 | Authentication: Email magic link login with administrator-created memberships | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0002_first-login-magic-link-admin-memberships.md` |
+| RV-DEC-P2-0003 | Authorization: Strict isolation of Supabase service-role key (Risk R-003) | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0003_service-role-key-isolation.md` |
+| RV-DEC-P2-0004 | Security: Credential key custody with runtime envelope encryption | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0004_credential-key-custody-envelope-encryption.md` |
+| RV-DEC-P2-0005 | Architecture: Introduce Redis as dedicated job broker for Phase 2 | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0005_job-engine-redis-broker.md` |
 
 ## How this index works
 
@@ -48,7 +53,7 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 
 ## Open / not yet recorded
 
-All P0 and P1 decisions are now recorded and approved as of RV-DEC-P1-0004 (2026-08-01). Remaining known upcoming decisions belong to P2+:
+All P0, P1, and P2 decisions are now recorded and approved as of RV-DEC-P2-0005 (2026-08-02). Remaining known upcoming decisions belong to P3+:
 
 ## Cross-ADR alignment log
 

@@ -644,15 +644,14 @@ Replace local pilot state with transactional PostgreSQL and establish the author
 
 `P2-GATE`: all authoritative state survives restart; RLS and API authorization negative tests pass; durable jobs resume after forced worker termination.
 
-###  Open Decisions (Delete section if decision already recorded as ADR)  
+### Locked ADRs
 
-| Decision | Recommended default | Needed by | Effect |
-|---|---|---|---|
-| Database environment | Separate Supabase project/schema for RekanVault pilot | P2 migration | Isolation from unrelated applications |
-| First login method | Email magic link plus administrator-created memberships | P2 UI auth | User onboarding and support |
-| Service-role use | Restrict to migrations/admin jobs; normal API uses user JWT plus scoped DB role | P2 repositories | Blast radius |
-| Credential key custody | One active and one previous key stored only in deployment secrets | P2 credential migration | Rotation and recovery |
-| Job implementation | Custom PostgreSQL lease table first; revisit dedicated queue only after metrics | P2 | Operational dependencies |
+All Phase 2 architectural decisions are locked and recorded in `docs/adr/`:
+- `RV-DEC-P2-0001`: [Database environment](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0001_database-environment-supabase-isolation.md) — Dedicated Supabase project and schema isolation.
+- `RV-DEC-P2-0002`: [First login method](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0002_first-login-magic-link-admin-memberships.md) — Email magic link login + admin membership provisioning.
+- `RV-DEC-P2-0003`: [Service-role key isolation](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0003_service-role-key-isolation.md) — Restrict `RV_SUPABASE_SECRET_KEY` strictly to DB migrations & admin workers (Risk R-003).
+- `RV-DEC-P2-0004`: [Credential key custody](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0004_credential-key-custody-envelope-encryption.md) — Runtime envelope encryption (active + previous key in deployment secrets).
+- `RV-DEC-P2-0005`: [Job engine implementation](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P2_0005_job-engine-redis-broker.md) — Introduce Redis (Celery / BullMQ) as dedicated background job broker.
 
 ---
 
