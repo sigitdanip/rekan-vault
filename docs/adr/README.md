@@ -43,6 +43,7 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 | RV-DEC-P2-0003 | Authorization: Strict isolation of Supabase service-role key (Risk R-003) | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0003_service-role-key-isolation.md` |
 | RV-DEC-P2-0004 | Security: Credential key custody with runtime envelope encryption | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0004_credential-key-custody-envelope-encryption.md` |
 | RV-DEC-P2-0005 | Architecture: Introduce Redis as dedicated job broker for Phase 2 | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0005_job-engine-redis-broker.md` |
+| RV-DEC-P2-0006 | Storage: Supabase Storage buckets for normalized extracted artifacts | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0006_artifact-storage-supabase-storage.md` |
 
 ## How this index works
 
@@ -53,7 +54,7 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 
 ## Open / not yet recorded
 
-All P0, P1, and P2 decisions are now recorded and approved as of RV-DEC-P2-0005 (2026-08-02). Remaining known upcoming decisions belong to P3+:
+All P0, P1, and P2 decisions are now recorded and approved as of RV-DEC-P2-0006 (2026-08-02). Remaining known upcoming decisions belong to P3+:
 
 ## Cross-ADR alignment log
 
@@ -67,6 +68,6 @@ Tracks when a new decision required updating earlier, already-approved ADRs (rat
   - `0001`–`0007`, `0011` — reviewed, no hosting-related content, no change needed.
 
 - **RV-DEC-0008** commits P6 to running a real benchmark of 6-7 hop graph queries against pilot-scale fixtures before P6-GATE closes, with Apache AGE pre-approved as the first escalation step if PostgreSQL recursive CTEs prove too slow. This is not optional — track it as a P6 to-do.
-- **RV-DEC-0013** leaves normalized artifact storage location (`RV_ARTIFACT_STORAGE_BACKEND`) as an unresolved follow-up. Currently defaults to local VPS filesystem, which may undercut the "keep the VPS lean" reasoning behind this ADR if the pilot corpus has large files. Decide explicitly before P3.
+- **RV-DEC-0013 follow-up resolved by RV-DEC-P2-0006**: Normalized artifact storage location (`RV_ARTIFACT_STORAGE_BACKEND`) is locked to Supabase Storage buckets (`supabase_storage`), resolving the VPS disk pressure concern.
 - **RV-DEC-0014** requires P4 (Search) and P6 (Graph) to implement Restricted-tier existence-hiding across every surface that could leak a hint (result counts, graph gaps, autocomplete, error-message wording) — not just the direct content-serving path. This is a stricter requirement than typical permission filtering and should get explicit test coverage, not be assumed to "come for free" from a basic permission check.
 - **RV-DEC-0015** defers the actual writing of the ~100 golden questions to a dedicated future session, once the pilot Drive/Notion corpus is connected and synced (post-P3). This is a hard P4-GATE blocker (see traceability matrix Gap 1) — track it so it doesn't get forgotten once P3 wraps up.
