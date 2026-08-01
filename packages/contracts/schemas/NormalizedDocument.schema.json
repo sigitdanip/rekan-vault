@@ -1,0 +1,195 @@
+{
+  "$defs": {
+    "DocumentBlock": {
+      "properties": {
+        "block_id": {
+          "title": "Block Id",
+          "type": "string"
+        },
+        "block_type": {
+          "title": "Block Type",
+          "type": "string"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "sequence": {
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "block_id",
+        "block_type",
+        "content",
+        "sequence"
+      ],
+      "title": "DocumentBlock",
+      "type": "object"
+    },
+    "DocumentLocator": {
+      "properties": {
+        "provider": {
+          "$ref": "#/$defs/SourceProvider"
+        },
+        "native_id": {
+          "title": "Native Id",
+          "type": "string"
+        },
+        "uri": {
+          "title": "Uri",
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "mime_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mime Type"
+        }
+      },
+      "required": [
+        "provider",
+        "native_id",
+        "uri"
+      ],
+      "title": "DocumentLocator",
+      "type": "object"
+    },
+    "DocumentVersion": {
+      "properties": {
+        "version_id": {
+          "title": "Version Id",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "version_number": {
+          "title": "Version Number",
+          "type": "integer"
+        },
+        "content_hash": {
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        },
+        "blocks": {
+          "items": {
+            "$ref": "#/$defs/DocumentBlock"
+          },
+          "title": "Blocks",
+          "type": "array"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "version_id",
+        "document_id",
+        "version_number",
+        "content_hash"
+      ],
+      "title": "DocumentVersion",
+      "type": "object"
+    },
+    "SourceProvider": {
+      "enum": [
+        "google_drive",
+        "notion",
+        "local_file"
+      ],
+      "title": "SourceProvider",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "document_id": {
+      "title": "Document Id",
+      "type": "string"
+    },
+    "workspace_id": {
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "source_id": {
+      "title": "Source Id",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "provider": {
+      "$ref": "#/$defs/SourceProvider"
+    },
+    "locator": {
+      "$ref": "#/$defs/DocumentLocator"
+    },
+    "active_version_id": {
+      "title": "Active Version Id",
+      "type": "string"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "title": "Updated At",
+      "type": "string"
+    },
+    "versions": {
+      "items": {
+        "$ref": "#/$defs/DocumentVersion"
+      },
+      "title": "Versions",
+      "type": "array"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "document_id",
+    "workspace_id",
+    "source_id",
+    "title",
+    "provider",
+    "locator",
+    "active_version_id"
+  ],
+  "title": "NormalizedDocument",
+  "type": "object"
+}

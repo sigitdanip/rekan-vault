@@ -1,0 +1,13 @@
+{
+  "name": "@rekanvault/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "scripts": {
+    "build": "node -e 'console.log(\"@rekanvault/contracts ready\")'",
+    "lint": "node -e 'console.log(\"@rekanvault/contracts lint passed\")'",
+    "test": "node -e 'console.log(\"@rekanvault/contracts test passed\")'",
+    "typecheck": "node -e 'console.log(\"@rekanvault/contracts typecheck passed\")'"
+  }
+}

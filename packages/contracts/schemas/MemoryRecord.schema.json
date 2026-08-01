@@ -1,0 +1,96 @@
+{
+  "$defs": {
+    "MemoryImpact": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "MemoryImpact",
+      "type": "string"
+    },
+    "MemoryType": {
+      "enum": [
+        "fact",
+        "decision",
+        "preference",
+        "workflow"
+      ],
+      "title": "MemoryType",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "memory_id": {
+      "title": "Memory Id",
+      "type": "string"
+    },
+    "workspace_id": {
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "memory_type": {
+      "$ref": "#/$defs/MemoryType"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "content": {
+      "title": "Content",
+      "type": "string"
+    },
+    "confidence": {
+      "default": 1.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "impact": {
+      "$ref": "#/$defs/MemoryImpact",
+      "default": "medium"
+    },
+    "source_document_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Document Ids",
+      "type": "array"
+    },
+    "superseded_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Superseded By"
+    },
+    "is_active": {
+      "default": true,
+      "title": "Is Active",
+      "type": "boolean"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "memory_id",
+    "workspace_id",
+    "memory_type",
+    "title",
+    "content"
+  ],
+  "title": "MemoryRecord",
+  "type": "object"
+}

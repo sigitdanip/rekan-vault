@@ -1,0 +1,64 @@
+{
+  "$defs": {
+    "EventType": {
+      "enum": [
+        "source.discovered",
+        "source.synced",
+        "source.failed",
+        "document.created",
+        "document.updated",
+        "document.deleted",
+        "version.normalized",
+        "evidence.indexed",
+        "memory.formed",
+        "memory.superseded",
+        "entity.resolved",
+        "relation.created",
+        "context_pack.created",
+        "skill.progress_updated",
+        "audit.recorded"
+      ],
+      "title": "EventType",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_type": {
+      "$ref": "#/$defs/EventType"
+    },
+    "workspace_id": {
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "aggregate_id": {
+      "title": "Aggregate Id",
+      "type": "string"
+    },
+    "timestamp": {
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_type",
+    "workspace_id",
+    "aggregate_id"
+  ],
+  "title": "LifecycleEvent",
+  "type": "object"
+}
