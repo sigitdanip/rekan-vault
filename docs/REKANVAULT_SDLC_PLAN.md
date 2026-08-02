@@ -769,16 +769,15 @@ Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Te
 
 `P3-GATE`: pilot Drive and Notion scopes converge after full lifecycle tests, duplicate delivery, missed signals, provider throttling, and forced worker downtime.
 
-###  Open Decisions (Delete section if decision already recorded as ADR)  
+### Locked ADRs
 
-| Decision | Recommended default | Needed by | Effect |
-|---|---|---|---|
-| Google scope | Internal pilot: `drive.readonly`; public product later evaluates `drive.file` + Picker | OAuth setup | Access breadth and Google verification |
-| Notion connection | Internal integration token for pilot; public OAuth deferred | P3 | Onboarding and token model |
-| Reconciliation cadence | Incremental Drive 3 min; Notion safety poll 5 min; both reconcile daily | P3 scheduler | Freshness, quota, VPS load |
-| Maximum source file | 50 MiB first release, configurable lower by workspace | P3 | Memory, download, abuse limits |
-| Google Docs tabs | Ingest all tabs and preserve tab locator | P3 structured extraction | Citation completeness |
-| Attachments | Preserve Notion links only in first release | P3 | Scope and storage |
+All Phase 3 architectural decisions are locked and recorded in `docs/adr/`:
+- `RV-DEC-P3-0001`: [Google Drive OAuth scope](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P3_0001_google-oauth-scope.md) — Read-only scope (`drive.readonly`) for internal pilot.
+- `RV-DEC-P3-0002`: [Notion authentication](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P3_0002_notion-internal-integration-auth.md) — Internal Integration Token (`secret_...`) for pilot onboarding.
+- `RV-DEC-P3-0003`: [Polling cadence](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P3_0003_reconciliation-and-polling-cadence.md) — Drive 3m, Notion 5m safety poll, daily full reconciliation.
+- `RV-DEC-P3-0004`: [Source file size limit](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P3_0004_maximum-source-file-size-cap.md) — 50 MiB default cap (`RV_MAX_SOURCE_FILE_BYTES`).
+- `RV-DEC-P3-0005`: [Google Docs multi-tab ingestion](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P3_0005_google-docs-tab-ingestion.md) — Parse all tabs & preserve tab locators (`doc_id#tab_id`).
+- `RV-DEC-P3-0006`: [Notion attachments](file:///home/sigisgood/rekanmu/rekan-vault/docs/adr/RekanVault_ADR_P3_0006_notion-attachment-link-preservation.md) — Preserve attachment links & metadata only in 0.1.0.
 
 ---
 
@@ -1651,3 +1650,4 @@ Use this template for each phase decision:
 |---|---|---|
 | 0.1 | 31 July 2026 | Created a separate phase-by-phase SDLC with tools, libraries, requirements, dependencies, tasks, environment-variable registry, test plans, exit gates, and phase-specific  Open Decisions (Delete section if decision already recorded as ADR). |
 | 0.2 | 2 August 2026 | Introduced `RekanVault_Test_Plan_Acceptance_Criteria.md` as a companion document; every test plan line across all phases (P2–P12) now carries a stable ID (`P<phase>-T<n>`) for cross-reference, so future AC-writing sessions never have to re-derive or double-number them. P2 test plan revised: `P2-T8` reworded to require key-rotation re-encryption (gap found — credentials encrypted under a fully-retired key had no recovery path); `P2-T9` scope narrowed to P2-testable action types only, with the remaining six §18.4 high-impact action types distributed to their owning phases (P5, P6, P9, P10) and flagged at each phase's test plan. Added backfill to-do to P2 for the re-encryption job. Flagged a new risk (R-018) for two §18.4 action types — destructive purge and external-system writeback — that have no owning phase in either this plan or the Product Build Plan's work packages; noted at P10's test plan pending resolution. |
+| 0.3 | 2 August 2026 | Locked all 6 Phase 3 Open Decisions as approved ADRs (`RV-DEC-P3-0001` through `RV-DEC-P3-0006`): Google `drive.readonly` pilot scope, Notion internal integration token, balanced 3m/5m/daily polling cadence, 50 MiB file cap, Google Docs multi-tab ingestion (`doc_id#tab_id`), and Notion attachment link preservation. |

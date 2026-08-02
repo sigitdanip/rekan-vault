@@ -44,6 +44,12 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 | RV-DEC-P2-0004 | Security: Credential key custody with runtime envelope encryption | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0004_credential-key-custody-envelope-encryption.md` |
 | RV-DEC-P2-0005 | Architecture: PostgreSQL-backed durable job queue (FOR UPDATE SKIP LOCKED) without Redis | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0005_job-engine-postgres-lease.md` |
 | RV-DEC-P2-0006 | Storage: Local VPS filesystem for normalized extracted artifacts | P2 | Approved | 2026-08-02 | `RekanVault_ADR_P2_0006_artifact-storage-vps-filesystem.md` |
+| RV-DEC-P3-0001 | Google Drive OAuth scope: Read-only scope (`drive.readonly`) for internal pilot | P3 | Approved | 2026-08-02 | `RekanVault_ADR_P3_0001_google-oauth-scope.md` |
+| RV-DEC-P3-0002 | Notion authentication: Internal Integration Token for pilot onboarding | P3 | Approved | 2026-08-02 | `RekanVault_ADR_P3_0002_notion-internal-integration-auth.md` |
+| RV-DEC-P3-0003 | Polling cadence: Drive 3m, Notion 5m safety poll, daily full reconciliation | P3 | Approved | 2026-08-02 | `RekanVault_ADR_P3_0003_reconciliation-and-polling-cadence.md` |
+| RV-DEC-P3-0004 | Source file size limit: 50 MiB default cap (`RV_MAX_SOURCE_FILE_BYTES`) | P3 | Approved | 2026-08-02 | `RekanVault_ADR_P3_0004_maximum-source-file-size-cap.md` |
+| RV-DEC-P3-0005 | Google Docs multi-tab ingestion: Parse all tabs & preserve tab locators (`doc_id#tab_id`) | P3 | Approved | 2026-08-02 | `RekanVault_ADR_P3_0005_google-docs-tab-ingestion.md` |
+| RV-DEC-P3-0006 | Notion attachments: Preserve attachment links & metadata only in 0.1.0 | P3 | Approved | 2026-08-02 | `RekanVault_ADR_P3_0006_notion-attachment-link-preservation.md` |
 
 ## How this index works
 
