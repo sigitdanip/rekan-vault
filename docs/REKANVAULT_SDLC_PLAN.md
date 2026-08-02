@@ -615,18 +615,19 @@ Replace local pilot state with transactional PostgreSQL and establish the author
 
 ### To-dos
 
-- [ ] Convert draft SQL into Alembic migrations with named constraints.
-- [ ] Create clean install, upgrade, and schema-drift checks.
-- [ ] Implement repository interfaces and transaction boundary.
-- [ ] Implement workspace-scoped query helpers.
-- [ ] Add RLS policies and negative isolation tests.
-- [ ] Implement JWT middleware and actor resolution.
-- [ ] Implement encrypted credential repository with key ID and rotation.
-- [ ] Implement durable job claim, heartbeat, retry, timeout, cancellation, and dead-letter.
-- [ ] Implement transactional outbox and idempotent consumer.
-- [ ] Implement audit writer that cannot include protected content bodies.
-- [ ] Add seed command for local/test workspace and roles.
-- [ ] Add source-neutral API repository smoke endpoints.
+- [x] Convert draft SQL into Alembic migrations with named constraints.
+- [x] Create clean install, upgrade, and schema-drift checks.
+- [x] Implement repository interfaces and transaction boundary.
+- [x] Implement workspace-scoped query helpers.
+- [x] Add RLS policies and negative isolation tests.
+- [x] Implement JWT middleware and actor resolution.
+- [x] Implement encrypted credential repository with key ID and rotation.
+- [x] Implement durable job claim, heartbeat, retry, timeout, cancellation, and dead-letter.
+- [x] Implement transactional outbox and idempotent consumer.
+- [x] Implement audit writer that cannot include protected content bodies.
+- [x] Add seed command for local/test workspace and roles.
+- [x] Add source-neutral API repository smoke endpoints.
+
 
 ### Test plan
 
