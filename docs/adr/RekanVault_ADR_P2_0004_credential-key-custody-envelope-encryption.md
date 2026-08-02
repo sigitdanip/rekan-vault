@@ -14,3 +14,26 @@
 - Impact: `credentials` table stores ciphertext, key ID, and IV. Encrypted credential repository inspects key ID and falls back to previous key during rotation.
 - Reversal trigger: Shift to external Key Management Service (KMS) in enterprise deployment phase.
 - Related ADR/tests: P2 credential encryption test plan.
+
+### Update — 2026-08-02 (gap found during P2 test-plan AC review)
+
+The original decision defines 1 active + 1 previous key but does not
+specify what happens when a key rotates *out* of the previous slot
+(i.e. a third rotation occurs). As written, data still encrypted
+under a dropped key becomes permanently undecryptable — this is a
+silent data-loss path, not an intended behavior.
+
+**Addition to Impact:** Key rotation must trigger a re-encryption
+job that re-encrypts every row still using the outgoing "previous"
+key under the new active key, before that key is removed from
+`RV_CREDENTIAL_KEY_ACTIVE` / `RV_CREDENTIAL_KEY_PREVIOUS`. No
+credential row may ever reference a key ID that is not one of the
+two currently configured.
+
+**Addition to To-dos (P2):** Implement rotation re-encryption job,
+triggered manually or on rotation event, with a completion check
+before the old key is retired.
+
+**Addition to Test plan (P2-T8):** Verify re-encryption job clears
+all rows off the outgoing key before it's dropped; verify no row
+ever references an unconfigured key ID.

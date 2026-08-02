@@ -15,6 +15,7 @@
 | First-release sources | Google Drive and Notion |
 | Initial deployment | Modular monolith plus workers on an approximately 8 GB VPS |
 | Companion document | `REKANVAULT_PRODUCT_BUILD_PLAN.md` |
+| Acceptance criteria companion | `RekanVault_TestPlan_AC.md` — every test plan line below carries a stable ID (`P<phase>-T<n>`); that file defines the pass bar for each ID. Test lines say *what* to test; the AC file says *what counts as passing*. Updated phase by phase, manually, right before that phase starts — see that file's own maintenance note. |
 
 ---
 
@@ -628,18 +629,25 @@ Replace local pilot state with transactional PostgreSQL and establish the author
 - [x] Add seed command for local/test workspace and roles.
 - [x] Add source-neutral API repository smoke endpoints.
 
+**Backfill to-do — found during test-plan AC review (2026-08-02), added after P2 was otherwise complete:**
+
+- [ ] Implement re-encryption job that migrates credential rows off an outgoing "previous" key onto the new active key before that key is retired from `RV_CREDENTIAL_KEY_ACTIVE`/`RV_CREDENTIAL_KEY_PREVIOUS`. Gap found while writing `P2-T8`'s acceptance criteria — see `RekanVault_ADR_P2_0004_credential-key-custody-envelope-encryption.md` update and `RekanVault_Test_Plan_Acceptance_Criteria.md`, `P2-T8`.
 
 ### Test plan
 
-- Clean migration and upgrade from previous revision.
-- Concurrent active-version creation cannot violate uniqueness.
-- Duplicate idempotency key returns the original result.
-- Worker crash releases an expired lease safely.
-- Outbox event is never committed without state and vice versa.
-- Viewer cannot cross workspace/corpus boundaries.
-- Invalid/expired/wrong-issuer JWT is rejected.
-- Credential ciphertext decrypts only with approved active/previous key.
-- Audit records exist for every seeded high-impact mutation.
+Each line carries a stable ID. Acceptance criteria for each ID are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P2 — this table is not duplicated here to avoid drift between the two documents.
+
+| ID | Test line |
+|---|---|
+| `P2-T1` | Clean migration and upgrade from previous revision. |
+| `P2-T2` | Concurrent active-version creation cannot violate uniqueness. |
+| `P2-T3` | Duplicate idempotency key returns the original result. |
+| `P2-T4` | Worker crash releases an expired lease safely. |
+| `P2-T5` | Outbox event is never committed without state and vice versa. |
+| `P2-T6` | Viewer cannot cross workspace/corpus boundaries. |
+| `P2-T7` | Invalid/expired/wrong-issuer JWT is rejected. |
+| `P2-T8` | Credential re-encryption clears all rows off an outgoing key before it is retired; no row ever references an unconfigured key ID. *(Revised 2026-08-02 — was "Credential ciphertext decrypts only with approved active/previous key," which did not account for what happens when a key rotates out entirely. See ADR update.)* |
+| `P2-T9` | Seeded P2-scope high-impact actions (permission widening, schema migration) each produce a complete audit record. Remaining §18.4 action types (verification, entity merge/unmerge, decision reversal/supersession, bulk invalidation, skill mastery approval, destructive purge, external-system writeback) are tested in their owning phase — see `RekanVault_Test_Plan_Acceptance_Criteria.md` for the full distribution and `RekanVault_Risk_Register.md` R-018 for two action types with no owning phase yet. *(Scope narrowed 2026-08-02 — originally read "Audit records exist for every seeded high-impact mutation," which assumed action types that don't exist until later phases.)* |
 
 ### Exit gate
 
@@ -744,14 +752,18 @@ The inherited adapter targets `2025-09-03`. Phase 3 must migrate it to Notion's 
 
 ### Test plan
 
-- Contract fixtures plus provider HTTP recordings with secrets removed.
-- Sandbox create, edit, rename, move, move out, restore, delete, and revoke.
-- Duplicate/delayed/out-of-order event property tests.
-- Crash before and after cursor commit.
-- Provider 401/403/404/409/429/5xx behavior.
-- Large/unsupported/corrupt file behavior.
-- Missed Notion webhook repaired by poll/reconciliation.
-- API/UI source health agrees with database state.
+Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P3, once written ahead of this phase starting.
+
+| ID | Test line |
+|---|---|
+| `P3-T1` | Contract fixtures plus provider HTTP recordings with secrets removed. |
+| `P3-T2` | Sandbox create, edit, rename, move, move out, restore, delete, and revoke. |
+| `P3-T3` | Duplicate/delayed/out-of-order event property tests. |
+| `P3-T4` | Crash before and after cursor commit. |
+| `P3-T5` | Provider 401/403/404/409/429/5xx behavior. |
+| `P3-T6` | Large/unsupported/corrupt file behavior. |
+| `P3-T7` | Missed Notion webhook repaired by poll/reconciliation. |
+| `P3-T8` | API/UI source health agrees with database state. |
 
 ### Exit gate
 
@@ -828,14 +840,18 @@ Qdrant payload filters enforce workspace, corpus, state, version, origin, and pe
 
 ### Test plan
 
-- Stable chunk IDs across identical reprocessing.
-- Active-version switch is atomic from a requester's perspective.
-- Permission, corpus, source, type, time, and state filters.
-- Stale/revoked evidence negative tests.
-- Exact phrase, Indonesian semantic, English semantic, mixed-language, acronym, and entity queries.
-- Known-unanswerable questions.
-- Qdrant deletion and deterministic rebuild.
-- Resource profile at realistic corpus size.
+Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P4, once written ahead of this phase starting. Note: several of these depend on the golden question set (RV-DEC-0015), which does not exist yet — those IDs cannot be fully closed out until that dependency clears.
+
+| ID | Test line |
+|---|---|
+| `P4-T1` | Stable chunk IDs across identical reprocessing. |
+| `P4-T2` | Active-version switch is atomic from a requester's perspective. |
+| `P4-T3` | Permission, corpus, source, type, time, and state filters. |
+| `P4-T4` | Stale/revoked evidence negative tests. |
+| `P4-T5` | Exact phrase, Indonesian semantic, English semantic, mixed-language, acronym, and entity queries. |
+| `P4-T6` | Known-unanswerable questions. |
+| `P4-T7` | Qdrant deletion and deterministic rebuild. |
+| `P4-T8` | Resource profile at realistic corpus size. |
 
 ### Exit gate
 
@@ -913,15 +929,21 @@ Prompt versions, temperature, schema, confidence, and review rules are versioned
 
 ### Test plan
 
-- Golden documents for each enabled memory type.
-- Hallucinated field and citation rejection.
-- Prompt injection inside source content.
-- Duplicate extraction replay.
-- Source edit changes only affected memories.
-- Source deletion with single vs multiple remaining evidence anchors.
-- High-impact decision always enters review.
-- Direct write records author and audit.
-- Provider timeout, malformed JSON, refusal, and rate limit.
+Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P5, once written ahead of this phase starting. This phase also picks up two new audit-record test lines carried over from `P2-T9`'s scope narrowing — add them here when this section is elaborated: verification of high-impact memory, and bulk invalidation (see `RekanVault_Test_Plan_Acceptance_Criteria.md`, P2 audit-coverage distribution table).
+
+| ID | Test line |
+|---|---|
+| `P5-T1` | Golden documents for each enabled memory type. |
+| `P5-T2` | Hallucinated field and citation rejection. |
+| `P5-T3` | Prompt injection inside source content. |
+| `P5-T4` | Duplicate extraction replay. |
+| `P5-T5` | Source edit changes only affected memories. |
+| `P5-T6` | Source deletion with single vs multiple remaining evidence anchors. |
+| `P5-T7` | High-impact decision always enters review. |
+| `P5-T8` | Direct write records author and audit. |
+| `P5-T9` | Provider timeout, malformed JSON, refusal, and rate limit. |
+| `P5-T10` | Verification of high-impact knowledge produces a complete audit record. |
+| `P5-T11` | Bulk invalidation of memories or evidence produces a complete audit record. |
 
 ### Exit gate
 
@@ -986,14 +1008,21 @@ No required runtime secrets. Graph depth, result limits, match thresholds, and a
 
 ### Test plan
 
-- Full name, nickname, role title, and organization acronym fixtures.
-- Ambiguous same-name people never auto-merge.
-- Merge/unmerge preserves links and audit.
-- Superseded/reversed decision resolves current state correctly.
-- Historical query returns the correct past state.
-- Traversal stops at unauthorized nodes/edges.
-- Relation without adequate evidence cannot become verified.
-- Bounded queries respect depth and node caps under load.
+Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P6, once written ahead of this phase starting. This phase also picks up two new audit-record test lines carried over from `P2-T9`'s scope narrowing (entity merge/unmerge, decision reversal/supersession), plus the RV-DEC-0008 deep-traversal benchmark commitment — add all when this section is elaborated.
+
+| ID | Test line |
+|---|---|
+| `P6-T1` | Full name, nickname, role title, and organization acronym fixtures. |
+| `P6-T2` | Ambiguous same-name people never auto-merge. |
+| `P6-T3` | Merge/unmerge preserves links and audit. |
+| `P6-T4` | Superseded/reversed decision resolves current state correctly. |
+| `P6-T5` | Historical query returns the correct past state. |
+| `P6-T6` | Traversal stops at unauthorized nodes/edges. |
+| `P6-T7` | Relation without adequate evidence cannot become verified. |
+| `P6-T8` | Bounded queries respect depth and node caps under load. |
+| `P6-T9` | Entity merge or unmerge operation produces a complete audit record. |
+| `P6-T10` | Decision reversal or supersession produces a complete audit record. |
+| `P6-T11` | Deep-traversal graph query benchmark executes within bounded latency limits (RV-DEC-0008). |
 
 ### Exit gate
 
@@ -1064,14 +1093,18 @@ Context budgets, retention, allowed historical/disputed material, and answer thr
 
 ### Test plan
 
-- Current decision vs historical decision.
-- Conflicting Drive/Notion evidence.
-- No-evidence and permission-hidden evidence.
-- Expired/stale evidence.
-- Citation points to the exact active version and locator.
-- Context-budget truncation keeps highest-value support.
-- Streaming interruption and retry do not duplicate messages.
-- Prompt injection and model attempt to cite nonexistent IDs.
+Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P7, once written ahead of this phase starting. Several of these depend on the golden set (RV-DEC-0015), same dependency noted at P4.
+
+| ID | Test line |
+|---|---|
+| `P7-T1` | Current decision vs historical decision. |
+| `P7-T2` | Conflicting Drive/Notion evidence. |
+| `P7-T3` | No-evidence and permission-hidden evidence. |
+| `P7-T4` | Expired/stale evidence. |
+| `P7-T5` | Citation points to the exact active version and locator. |
+| `P7-T6` | Context-budget truncation keeps highest-value support. |
+| `P7-T7` | Streaming interruption and retry do not duplicate messages. |
+| `P7-T8` | Prompt injection and model attempt to cite nonexistent IDs. |
 
 ### Exit gate
 
@@ -1147,13 +1180,17 @@ No new secrets. Browser code may use only:
 
 ### Test plan
 
-- Viewer, contributor, reviewer, and administrator journeys.
-- Connect → sync → search → cite → memory → review → graph → ask.
-- Expired session and permission change mid-session.
-- Loading, empty, failure, retry, and offline/reconnect states.
-- Keyboard navigation and automated accessibility.
-- Chromium, Firefox, and WebKit desktop; responsive mobile smoke.
-- Browser cache cannot cross users.
+Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P8, once written ahead of this phase starting.
+
+| ID | Test line |
+|---|---|
+| `P8-T1` | Viewer, contributor, reviewer, and administrator journeys. |
+| `P8-T2` | Connect → sync → search → cite → memory → review → graph → ask. |
+| `P8-T3` | Expired session and permission change mid-session. |
+| `P8-T4` | Loading, empty, failure, retry, and offline/reconnect states. |
+| `P8-T5` | Keyboard navigation and automated accessibility. |
+| `P8-T6` | Chromium, Firefox, and WebKit desktop; responsive mobile smoke. |
+| `P8-T7` | Browser cache cannot cross users. |
 
 ### Exit gate
 
@@ -1216,13 +1253,18 @@ No new environment variables. Progress rules and recommendation weights are vers
 
 ### Test plan
 
-- Cyclic prerequisite rejection.
-- Permission-safe evidence aggregation.
-- High-confidence progression without evidence is rejected.
-- Evidence revocation changes progress state appropriately.
-- Recommendation explanation matches rules.
-- Historical progress is preserved.
-- One objective returns a valid prerequisite path and gaps.
+Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P9, once written ahead of this phase starting. This phase also picks up one new audit-record test line carried over from `P2-T9`'s scope narrowing: skill mastery approval (Proficient/Teaching) — add it here when this section is elaborated.
+
+| ID | Test line |
+|---|---|
+| `P9-T1` | Cyclic prerequisite rejection. |
+| `P9-T2` | Permission-safe evidence aggregation. |
+| `P9-T3` | High-confidence progression without evidence is rejected. |
+| `P9-T4` | Evidence revocation changes progress state appropriately. |
+| `P9-T5` | Recommendation explanation matches rules. |
+| `P9-T6` | Historical progress is preserved. |
+| `P9-T7` | One objective returns a valid prerequisite path and gaps. |
+| `P9-T8` | Skill mastery approval (Proficient/Teaching) produces a complete audit record. |
 
 ### Exit gate
 
@@ -1301,14 +1343,19 @@ Next.js is self-hosted using its documented production output and runtime-variab
 
 ### Test plan
 
-- OWASP-oriented API and browser negative tests.
-- IDOR/cross-workspace/cross-corpus attempts.
-- Malicious file, huge request, webhook replay, invalid signature, and rate burst.
-- Token rotation and revoked membership.
-- Database outage, Qdrant outage, provider outage, worker crash, and disk pressure.
-- Backup corruption detection and clean restore.
-- Full Qdrant rebuild benchmark.
-- 24-hour soak with scheduled sync/reconciliation.
+Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P10, once written ahead of this phase starting. This phase also owns the consolidated audit-coverage rollup across all 8 §18.4 action types (add as a new ID here), and resolution of Risk Register R-018 (destructive purge / external-system writeback) determines whether two of those 8 get a test line at all.
+
+| ID | Test line |
+|---|---|
+| `P10-T1` | OWASP-oriented API and browser negative tests. |
+| `P10-T2` | IDOR/cross-workspace/cross-corpus attempts. |
+| `P10-T3` | Malicious file, huge request, webhook replay, invalid signature, and rate burst. |
+| `P10-T4` | Token rotation and revoked membership. |
+| `P10-T5` | Database outage, Qdrant outage, provider outage, worker crash, and disk pressure. |
+| `P10-T6` | Backup corruption detection and clean restore. |
+| `P10-T7` | Full Qdrant rebuild benchmark. |
+| `P10-T8` | 24-hour soak with scheduled sync/reconciliation. |
+| `P10-T9` | Consolidated audit rollup verifies complete audit coverage across all §18.4 high-impact action types. |
 
 ### Exit gate
 
@@ -1374,14 +1421,18 @@ No new application variables. Staging and production receive separate values, cr
 
 ### Test plan
 
-- Full Product Build Plan acceptance matrix.
-- Clean install and upgrade from the previous release candidate.
-- Real Drive and Notion lifecycle against pilot scopes.
-- Retrieval, citation, memory, graph, context, answer, SkillTree, permission, audit, and recovery regression.
-- Cross-browser primary workflows.
-- Release-image vulnerability and secret scans.
-- Backup restore and Qdrant rebuild from the frozen release candidate.
-- Pilot task completion and observed trust/correction outcomes.
+Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P11, once written ahead of this phase starting.
+
+| ID | Test line |
+|---|---|
+| `P11-T1` | Full Product Build Plan acceptance matrix. |
+| `P11-T2` | Clean install and upgrade from the previous release candidate. |
+| `P11-T3` | Real Drive and Notion lifecycle against pilot scopes. |
+| `P11-T4` | Retrieval, citation, memory, graph, context, answer, SkillTree, permission, audit, and recovery regression. |
+| `P11-T5` | Cross-browser primary workflows. |
+| `P11-T6` | Release-image vulnerability and secret scans. |
+| `P11-T7` | Backup restore and Qdrant rebuild from the frozen release candidate. |
+| `P11-T8` | Pilot task completion and observed trust/correction outcomes. |
 
 ### Release metrics
 
@@ -1466,11 +1517,15 @@ None by default. A new connector/provider must define variables in this registry
 
 ### Test plan
 
-- Re-run affected golden and end-to-end sets for every change.
-- Monthly restore sample and quarterly full recovery drill.
-- Dependency/model upgrade regression before promotion.
-- Periodic permission and retention negative tests.
-- Compare post-release retrieval, correction, and review metrics with the prior release.
+Each line carries a stable ID. This phase is ongoing/non-terminal, so IDs are appended as new operational test cases arise, rather than fixed at a phase start. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P12.
+
+| ID | Test line |
+|---|---|
+| `P12-T1` | Re-run affected golden and end-to-end sets for every change. |
+| `P12-T2` | Monthly restore sample and quarterly full recovery drill. |
+| `P12-T3` | Dependency/model upgrade regression before promotion. |
+| `P12-T4` | Periodic permission and retention negative tests. |
+| `P12-T5` | Compare post-release retrieval, correction, and review metrics with the prior release. |
 
 ### Exit gate
 
@@ -1595,3 +1650,4 @@ Use this template for each phase decision:
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 31 July 2026 | Created a separate phase-by-phase SDLC with tools, libraries, requirements, dependencies, tasks, environment-variable registry, test plans, exit gates, and phase-specific  Open Decisions (Delete section if decision already recorded as ADR). |
+| 0.2 | 2 August 2026 | Introduced `RekanVault_Test_Plan_Acceptance_Criteria.md` as a companion document; every test plan line across all phases (P2–P12) now carries a stable ID (`P<phase>-T<n>`) for cross-reference, so future AC-writing sessions never have to re-derive or double-number them. P2 test plan revised: `P2-T8` reworded to require key-rotation re-encryption (gap found — credentials encrypted under a fully-retired key had no recovery path); `P2-T9` scope narrowed to P2-testable action types only, with the remaining six §18.4 high-impact action types distributed to their owning phases (P5, P6, P9, P10) and flagged at each phase's test plan. Added backfill to-do to P2 for the re-encryption job. Flagged a new risk (R-018) for two §18.4 action types — destructive purge and external-system writeback — that have no owning phase in either this plan or the Product Build Plan's work packages; noted at P10's test plan pending resolution. |

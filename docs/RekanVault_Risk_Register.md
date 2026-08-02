@@ -140,13 +140,20 @@ Severity is rated **Impact** (Low/Medium/High/Critical) × **Likelihood** (Low/M
 - **Description:** Beyond the security-review-gap risk already captured in R-001, having Sigit as sole reviewer for *everything* (not just security-sensitive changes) could become a throughput bottleneck if coding agents produce work faster than one person can review.
 - **Status:** Open — not yet a problem, but worth watching as implementation velocity increases.
 
+### R-018 — "Destructive purge" and "External-system writeback" have no owning phase
+- **Source:** Product Build Plan section 18.4 (high-impact actions) vs. SDLC plan phases P0–P10; found during P2 test-plan AC review (2026-08-02)
+- **Impact:** Medium | **Likelihood:** High (already confirmed true, not speculative)
+- **Description:** Section 18.4 names 8 high-impact action types requiring explicit permission and complete audit. Six map cleanly to a build phase (entity merge → P6, decision reversal → P6, verification → P5, permission widening → P2, bulk invalidation → P5/P6, schema migration → P2). Two do not appear in any phase's to-do list or work package: **destructive purge** and **external-system writeback**. Neither RV0–RV9 (Product Build Plan §23) nor P1–P10 (SDLC plan) builds a purge feature or any external writeback capability. If left unresolved, these could either (a) get built ad hoc late in the project without proper audit/permission design, or (b) silently never get built despite being named as a required high-impact action type.
+- **Status:** Open — no mitigation defined yet.
+- **Mitigation ideas:** Sigit decides one of: (a) assign each to an owning phase now — likely purge fits P10 (governance/retention work) and writeback fits post-0.1.0 given §8.3 already defers "automatic actions in external systems" — or (b) formally defer both to a later release via RV-DEC-0017 (non-goals ADR) if they're not actually needed for `0.1.0`, since external writeback already conflicts with an existing frozen non-goal (§8.3 item 7 / RV-DEC-0017 item 7: "Automatic actions in external systems").
+
 ---
 
 ## Summary by status
 
 | Status | Count | Risk IDs |
 |---|---|---|
-| Open | 12 | R-002, R-003, R-004, R-006, R-008, R-009, R-010, R-014, R-015, R-016, R-017, (R-007 mitigated-pending-verification listed here for visibility) |
+| Open | 13 | R-002, R-003, R-004, R-006, R-008, R-009, R-010, R-014, R-015, R-016, R-017, R-018, (R-007 mitigated-pending-verification listed here for visibility) |
 | Mitigated by design (pending gate verification) | 4 | R-005, R-007, R-011, R-012 |
 | Accepted (deliberate tradeoff) | 1 | R-001 |
 | Retired | 0 | — |
