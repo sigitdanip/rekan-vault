@@ -1,6 +1,7 @@
 """
 RekanVault AES-GCM Credential Envelope Encryption (RV-DEC-P2-0004)
-Provides AES-256-GCM encryption/decryption with key rotation support.
+Provides AES-256-GCM encryption/decryption with key rotation support,
+including a mandatory re-encryption step before retiring a previous key.
 """
 
 from __future__ import annotations
@@ -10,6 +11,8 @@ import os
 from typing import Dict, Tuple
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.config import settings
 
@@ -91,3 +94,29 @@ class CredentialEncryptor:
         iv = base64.b64decode(iv_b64.encode("ascii"))
         plaintext_bytes = aesgcm.decrypt(iv, ciphertext, None)
         return plaintext_bytes.decode("utf-8")
+
+    async def reencrypt_credentials(self, session: AsyncSession) -> int:
+        """
+        P2-T8: Re-encrypt every credential row still encrypted under a non-active
+        key onto the current active key. Call this BEFORE retiring a previous key
+        from RV_CREDENTIAL_KEY_PREVIOUS.
+
+        Returns the number of rows re-encrypted.
+        """
+        from rekanvault.storage.models import Credential
+
+        active_key_id = self.key_manager.active_key_id
+        stmt = select(Credential).where(Credential.key_id != active_key_id)
+        result = await session.execute(stmt)
+        stale_credentials = result.scalars().all()
+
+        count = 0
+        for cred in stale_credentials:
+            plaintext = self.decrypt(cred.ciphertext, cred.iv, cred.key_id)
+            new_ciphertext, new_iv, new_key_id = self.encrypt(plaintext)
+            cred.ciphertext = new_ciphertext
+            cred.iv = new_iv
+            cred.key_id = new_key_id
+            count += 1
+
+        return count

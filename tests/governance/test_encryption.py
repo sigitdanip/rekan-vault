@@ -3,6 +3,7 @@ Tests for AES-256-GCM Credential Envelope Encryption & Key Rotation (RV-DEC-P2-0
 """
 
 import os
+import uuid
 
 import pytest
 
@@ -62,3 +63,72 @@ def test_missing_key_raises_key_error() -> None:
     enc = CredentialEncryptor(key_manager=km)
     with pytest.raises(KeyError):
         enc.decrypt("dummy_c", "dummy_iv", "non_existent_key")
+
+
+@pytest.mark.asyncio
+async def test_reencrypt_credentials_clears_outgoing_key() -> None:
+    """P2-T8: Re-encrypt all credential rows off outgoing key before retirement."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from rekanvault.storage.models import Credential
+
+    key_v1 = os.urandom(32)
+    key_v2 = os.urandom(32)
+
+    # Setup: key-v2 is active, key-v1 is previous (still in custody)
+    km = KeyManager()
+    km.keys["key-v2"] = key_v2
+    km.keys["key-v1"] = key_v1
+    km.active_key_id = "key-v2"
+    enc = CredentialEncryptor(key_manager=km)
+
+    # Encrypt once with key-v1 active
+    km_v1 = KeyManager()
+    km_v1.keys["key-v1"] = key_v1
+    km_v1.active_key_id = "key-v1"
+    enc_v1 = CredentialEncryptor(key_manager=km_v1)
+    old_ciphertext, old_iv, _ = enc_v1.encrypt("my-refresh-token-abc")
+
+    # Simulate stored credential still on old key
+    cred = Credential(
+        id=uuid.uuid4(),
+        workspace_id=uuid.uuid4(),
+        key_id="key-v1",
+        ciphertext=old_ciphertext,
+        iv=old_iv,
+    )
+
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [cred]
+
+    session = AsyncMock()
+    session.execute.return_value = mock_result
+
+    # Re-encrypt: should move credential from key-v1 to key-v2
+    reencrypted_count = await enc.reencrypt_credentials(session)
+    assert reencrypted_count == 1
+    assert cred.key_id == "key-v2"
+
+    # Decrypted plaintext should be the original secret
+    decrypted = enc.decrypt(cred.ciphertext, cred.iv, "key-v2")
+    assert decrypted == "my-refresh-token-abc"
+
+
+@pytest.mark.asyncio
+async def test_no_credentials_to_reencrypt_returns_zero() -> None:
+    """P2-T8: When all credentials are already on active key, re-encrypt returns 0."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = []
+
+    session = AsyncMock()
+    session.execute.return_value = mock_result
+
+    km = KeyManager()
+    km.keys["key-v1"] = os.urandom(32)
+    km.active_key_id = "key-v1"
+    enc = CredentialEncryptor(key_manager=km)
+
+    count = await enc.reencrypt_credentials(session)
+    assert count == 0

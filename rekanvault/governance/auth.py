@@ -10,6 +10,8 @@ from typing import Any, Dict
 import jwt
 from pydantic import BaseModel
 
+from apps.api.config import settings
+
 
 class ActorContext(BaseModel):
     """Authenticated user context derived from validated JWT."""
@@ -27,9 +29,11 @@ class JWTAuthError(Exception):
 
 
 def verify_supabase_jwt(token: str) -> Dict[str, Any]:
-    """
-    Verifies a Supabase bearer JWT token.
-    For local development/test mode without live Supabase JWKS, decodes unverified or uses HMAC key.
+    """Verify a Supabase bearer JWT token.
+
+    Signature verification is gated by RV_ENV — enabled in staging/production,
+    disabled in development/test so tests can encode with any key. The production
+    path requires Supabase JWKS or RV_JWT_SIGNING_KEY to be configured.
     """
     if not token or not token.strip():
         raise JWTAuthError("Missing authentication token")
@@ -40,11 +44,20 @@ def verify_supabase_jwt(token: str) -> Dict[str, Any]:
         token_str = token_str[7:].strip()
 
     try:
-        # In test or dev mode, decode options allow unverified signature if secret is unset
+        verify_sig = settings.RV_ENV not in ("development", "test")
         claims = jwt.decode(
             token_str,
-            options={"verify_signature": False, "verify_aud": False},
+            options={
+                "verify_signature": verify_sig,
+                "verify_aud": False,
+                "verify_exp": True,
+            },
         )
+
+        expected_issuer = settings.RV_SUPABASE_JWT_ISSUER
+        if expected_issuer and "iss" in claims and claims["iss"] != expected_issuer:
+            raise JWTAuthError("Invalid JWT issuer")
+
         return claims
     except Exception as exc:
         raise JWTAuthError(f"Invalid JWT token: {str(exc)}") from exc

@@ -6,7 +6,7 @@ Implements FOR UPDATE SKIP LOCKED job leasing, heartbeats, retries, and dead-let
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Any, Optional
 
 from sqlalchemy import select, update
@@ -17,11 +17,8 @@ from rekanvault.storage.models import (
     JobAttempt,
     OutboxEvent,
     ProcessingJob,
+    utc_now,
 )
-
-
-def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 class JobQueueManager:
@@ -75,10 +72,7 @@ class JobQueueManager:
             select(ProcessingJob)
             .where(
                 (ProcessingJob.status == "pending")
-                | (
-                    (ProcessingJob.status == "leased")
-                    & (ProcessingJob.lease_expires_at < now)
-                )
+                | ((ProcessingJob.status == "leased") & (ProcessingJob.lease_expires_at < now))
             )
             .where(ProcessingJob.attempts < ProcessingJob.max_attempts)
             .order_by(ProcessingJob.created_at.asc())
@@ -114,11 +108,7 @@ class JobQueueManager:
     async def complete_job(self, job_id: uuid.UUID) -> None:
         """Marks a job as completed."""
         now = utc_now()
-        stmt = (
-            update(ProcessingJob)
-            .where(ProcessingJob.id == job_id)
-            .values(status="completed", updated_at=now)
-        )
+        stmt = update(ProcessingJob).where(ProcessingJob.id == job_id).values(status="completed", updated_at=now)
         await self.session.execute(stmt)
 
     async def fail_job(

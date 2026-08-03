@@ -203,7 +203,9 @@ class Corpus(Base):
 
 class Document(Base):
     __tablename__ = "documents"
-    __table_args__ = (UniqueConstraint("workspace_id", "source_id", "external_id", name="uq_documents_workspace_source_ext"),)
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "source_id", "external_id", name="uq_documents_workspace_source_ext"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     workspace_id: Mapped[uuid.UUID] = mapped_column(
@@ -413,7 +415,9 @@ class OutboxEvent(Base):
     )
     event_type: Mapped[str] = mapped_column(String(64), nullable=False)
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
-    status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False, index=True)  # pending, published, failed
+    status: Mapped[str] = mapped_column(
+        String(32), default="pending", nullable=False, index=True
+    )  # pending, published, failed
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 

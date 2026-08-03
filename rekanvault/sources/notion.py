@@ -37,7 +37,7 @@ class NotionConnector(BaseConnector):
         for page_info in mock_pages:
             doc_id = generate_id("doc")
             ver_id = generate_id("ver")
-            blocks_list: list[str] = page_info["blocks"]  # type: ignore[assignment]
+            blocks_list: list[str] = page_info["blocks"]  # type: ignore[assignment]  # ponytail: mock data is loosely typed; P3 replaces this block entirely
             content_text = "\n".join(blocks_list)
             content_hash = hashlib.sha256(content_text.encode("utf-8")).hexdigest()
 

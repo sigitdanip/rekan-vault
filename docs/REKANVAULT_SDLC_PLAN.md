@@ -319,6 +319,8 @@ This registry is authoritative for names. Each phase lists only the variables it
 | `RV_SUPABASE_SECRET_KEY` | Only for approved server admin use | Yes | New Supabase server key; bypasses RLS and is never exposed to the browser |
 | `RV_CREDENTIAL_ENCRYPTION_KEYS` | Yes from P2 | Yes | Ordered `key_id:base64key` values for rotation |
 | `RV_ACTIVE_CREDENTIAL_KEY_ID` | Yes from P2 | No | Key used for new encryption |
+| `RV_CREDENTIAL_KEY_ACTIVE` | Yes from P2 | Yes | Active AES-GCM key as `key_id:base64key` |
+| `RV_CREDENTIAL_KEY_PREVIOUS` | Yes from P2 | Yes | Previous AES-GCM key as `key_id:base64key` for rotation fallback |
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes from P2 | No | Browser-safe project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes from P2 | No | Browser-safe publishable key |
 | `NEXT_PUBLIC_REKANVAULT_API_URL` | Yes from P2 | No | Browser API origin |
@@ -631,7 +633,8 @@ Replace local pilot state with transactional PostgreSQL and establish the author
 
 **Backfill to-do — found during test-plan AC review (2026-08-02), added after P2 was otherwise complete:**
 
-- [ ] Implement re-encryption job that migrates credential rows off an outgoing "previous" key onto the new active key before that key is retired from `RV_CREDENTIAL_KEY_ACTIVE`/`RV_CREDENTIAL_KEY_PREVIOUS`. Gap found while writing `P2-T8`'s acceptance criteria — see `RekanVault_ADR_P2_0004_credential-key-custody-envelope-encryption.md` update and `RekanVault_Test_Plan_Acceptance_Criteria.md`, `P2-T8`.
+- [x] Implement re-encryption job that migrates credential rows off an outgoing "previous" key onto the new active key before that key is retired from `RV_CREDENTIAL_KEY_ACTIVE`/`RV_CREDENTIAL_KEY_PREVIOUS`. Gap found while writing `P2-T8`'s acceptance criteria — see `RekanVault_ADR_P2_0004_credential-key-custody-envelope-encryption.md` update and `RekanVault_Test_Plan_Acceptance_Criteria.md`, `P2-T8`.
+  - **Completed 2026-08-03**: `CredentialEncryptor.reencrypt_credentials(session)` method added to `rekanvault/governance/encryption.py`. Verified by `tests/governance/test_encryption.py::test_reencrypt_credentials_clears_outgoing_key` and `test_no_credentials_to_reencrypt_returns_zero`.
 
 ### Test plan
 

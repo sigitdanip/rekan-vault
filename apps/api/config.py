@@ -6,37 +6,27 @@ class Settings(BaseSettings):
 
     # Core System & App
     RV_ENV: str = "development"
-    RV_LOG_LEVEL: str = "INFO"
-    RV_LOG_FORMAT: str = "json"
-    RV_PUBLIC_BASE_URL: str = "http://localhost:3000"
     RV_API_BASE_URL: str = "http://localhost:8000"
     RV_ALLOWED_ORIGINS: str = "http://localhost:3000"
     RV_RELEASE_VERSION: str = "0.1.0"
     RV_COMPONENT_INSTANCE: str = "api-1"
     RV_API_HOST: str = "0.0.0.0"
     RV_API_PORT: int = 8000
-    RV_REQUEST_MAX_BODY_BYTES: int = 10_485_760
     RV_SHUTDOWN_GRACE_SECONDS: int = 30
 
     # Phase 2: Database (PostgreSQL)
     RV_DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/rekanvault"
     RV_DATABASE_POOL_MIN_SIZE: int = 1
     RV_DATABASE_POOL_MAX_SIZE: int = 10
-    RV_DATABASE_STATEMENT_TIMEOUT_MS: int = 30000
 
     # Phase 2: Supabase Auth & JWT
-    RV_SUPABASE_URL: str = "http://localhost:54321"
-    RV_SUPABASE_JWKS_URL: str = "http://localhost:54321/auth/v1/jwks.json"
     RV_SUPABASE_JWT_ISSUER: str = "http://localhost:54321/auth/v1"
-    RV_SUPABASE_JWT_AUDIENCE: str = "authenticated"
-    RV_SUPABASE_SECRET_KEY: str = ""  # Admin / Migration worker only (Risk R-003)
 
     # Phase 2: Credential Encryption (AES-GCM - RV-DEC-P2-0004)
     RV_CREDENTIAL_KEY_ACTIVE: str = "key-1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
     RV_CREDENTIAL_KEY_PREVIOUS: str = ""
     RV_CREDENTIAL_ENCRYPTION_KEYS: str = ""
     RV_ACTIVE_CREDENTIAL_KEY_ID: str = "key-1"
-
 
     # Phase 2: Worker & Job Engine (RV-DEC-P2-0005, RV-DEC-P2-0006)
     RV_WORKER_QUEUES: str = "default"
@@ -50,5 +40,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
-

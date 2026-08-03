@@ -79,11 +79,18 @@ Tracks where each remaining §18.4 high-impact action type's audit-record test l
 
 ## P3 — Production Google Drive and Notion Lifecycle
 
-*(Placeholder — not yet elaborated. Populate this section right before P3 begins, following the maintenance process above.)*
+**Status: In Progress** — Acceptance criteria elaborated at Phase 3 start.
 
 | ID | Test line | Acceptance criterion | Source | Status |
 |---|---|---|---|---|
-| — | — | — | — | Not yet elaborated |
+| P3-T1 | Contract fixtures plus provider HTTP recordings with secrets removed. | Provider HTTP recordings (Google Drive API v3, Google Docs API v1, Notion API `2026-03-11`) and contract fixtures have all secrets (bearer tokens, secret keys) scrubbed/replaced with placeholders. Fixtures validate cleanly against Pydantic contract schemas. | Test line + `RV-DEC-P3-0001` + `RV-DEC-P3-0002` + `RV-DEC-P3-0005` | Defined |
+| P3-T2 | Sandbox create, edit, rename, move, move out, restore, delete, and revoke. | Live or mock lifecycle mutations (create, edit content, rename title, move folder, move out of root, trash/archive, restore, revoke access) in Google Drive and Notion update active eligibility and record version changes without losing document identity. Notion attachment links preserved per `RV-DEC-P3-0006`. | Test line + `RV-DEC-P3-0006` + `P3-GATE` | Defined |
+| P3-T3 | Duplicate/delayed/out-of-order event property tests. | Out-of-order, duplicate, or delayed webhook/event notifications for a single resource converge to identical final database state as sequential events, producing no duplicate active versions or orphaned outbox events. Cadence per `RV-DEC-P3-0003`. | Test line + `RV-DEC-P3-0003` | Defined |
+| P3-T4 | Crash before and after cursor commit. | Interruption (worker crash) before cursor/start-page-token commit causes clean re-execution upon restart without duplicate active versions. Interruption after cursor commit resumes accurately from saved cursor without missing changes. | Test line + `P3-GATE` | Defined |
+| P3-T5 | Provider 401/403/404/409/429/5xx behavior. | Provider status codes handle deterministically: 401/403 mark source credentials in error state; 404 deactivates document retrieval eligibility; 429/5xx execute bounded exponential backoff with jitter via `tenacity`; 409 handles concurrent revision conflict. | Test line + SDLC §8 | Defined |
+| P3-T6 | Large/unsupported/corrupt file behavior. | Files exceeding `RV_MAX_SOURCE_FILE_BYTES` (50 MiB cap per `RV-DEC-P3-0004`), unsupported MIME types, or unparseable byte streams raise structured `FILE_TOO_LARGE` or `UNSUPPORTED_FORMAT` extraction diagnostic warnings without crashing worker execution. | Test line + `RV-DEC-P3-0004` | Defined |
+| P3-T7 | Missed Notion webhook repaired by poll/reconciliation. | A dropped or unreceived Notion webhook event is detected and repaired by the 5-minute safety poll (`RV-DEC-P3-0003`) or daily full reconciliation, converging state to 100% agreement with provider inventory. | Test line + `RV-DEC-P3-0003` | Defined |
+| P3-T8 | API/UI source health agrees with database state. | FastAPI source health API endpoints (`/sources/health`, `/sources/status`) and Next.js Sources UI reflect exact database state for connected roots, active sync status, freshness timestamps, and extraction warning counts. | Test line + SDLC §8 | Defined |
 
 ## P4 — Evidence Layer, Hybrid RAG, and Search
 
