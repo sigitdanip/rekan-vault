@@ -44,6 +44,7 @@ Thumbs.db
 # Agents, Skills, Prompts
 .omx/
 .omg/
+.omo/
 .codex/
 !.codex/agents/
 !.codex/agents/**
@@ -54,4 +55,5 @@ Thumbs.db
 !.codex/prompts/**
 .agents/
 skills_list.txt
+GEMINI.md
 
