@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     # Core System & App
     RV_ENV: str = "development"
-    RV_API_BASE_URL: str = "http://localhost:8000"
+    RV_API_BASE_URL: str = "http://localhost:9002"
     RV_ALLOWED_ORIGINS: str = "http://localhost:9001"
     RV_RELEASE_VERSION: str = "0.1.0"
     RV_COMPONENT_INSTANCE: str = "api-1"
@@ -45,12 +45,14 @@ class Settings(BaseSettings):
     RV_GOOGLE_OAUTH_SCOPES: str = "https://www.googleapis.com/auth/drive.readonly"
     RV_GOOGLE_PILOT_REFRESH_TOKEN: str = ""
     RV_GOOGLE_API_TIMEOUT_SECONDS: int = 30
+    RV_GOOGLE_FOLDER_ID: str = ""
 
     # Phase 3: Notion Internal Integration (RV-DEC-P3-0002)
     RV_NOTION_API_VERSION: str = "2026-03-11"
     RV_NOTION_TOKEN: str = ""
     RV_NOTION_API_TIMEOUT_SECONDS: int = 30
     RV_NOTION_WEBHOOK_VERIFICATION_TOKEN: str = ""
+    RV_NOTION_PAGE_ID: str = ""
 
 
 settings = Settings()

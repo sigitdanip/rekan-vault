@@ -15,13 +15,16 @@ from pathlib import Path
 
 import pytest
 
+from apps.api.config import settings
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
 MIGRATION_PATH = Path("alembic/versions/20260802_0001_p2_initial_schema.py")
 REVISION_ID = "20260802_0001"
-DATABASE_URL = os.getenv("RV_DATABASE_URL", "") or os.getenv("DATABASE_URL", "")
+_db_url = settings.RV_DATABASE_URL
+DATABASE_URL = "" if "localhost" in _db_url else _db_url
 
 # ---------------------------------------------------------------------------
 # Structural tests (no DB required)
