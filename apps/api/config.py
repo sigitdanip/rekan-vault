@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     # Phase 3: Google Drive OAuth (RV-DEC-P3-0001)
     RV_GOOGLE_CLIENT_ID: str = ""
     RV_GOOGLE_CLIENT_SECRET: str = ""
-    RV_GOOGLE_OAUTH_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/callback/google"
+    RV_GOOGLE_OAUTH_REDIRECT_URI: str = "http://localhost:9002/api/v1/auth/callback/google"
     RV_GOOGLE_OAUTH_SCOPES: str = "https://www.googleapis.com/auth/drive.readonly"
     RV_GOOGLE_PILOT_REFRESH_TOKEN: str = ""
     RV_GOOGLE_API_TIMEOUT_SECONDS: int = 30
