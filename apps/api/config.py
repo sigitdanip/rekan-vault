@@ -38,5 +38,19 @@ class Settings(BaseSettings):
     RV_ARTIFACT_STORAGE_PATH: str = "/tmp/rekanvault_artifacts"
     RV_MAX_SOURCE_FILE_BYTES: int = 52_428_800
 
+    # Phase 3: Google Drive OAuth (RV-DEC-P3-0001)
+    RV_GOOGLE_CLIENT_ID: str = ""
+    RV_GOOGLE_CLIENT_SECRET: str = ""
+    RV_GOOGLE_OAUTH_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/callback/google"
+    RV_GOOGLE_OAUTH_SCOPES: str = "https://www.googleapis.com/auth/drive.readonly"
+    RV_GOOGLE_PILOT_REFRESH_TOKEN: str = ""
+    RV_GOOGLE_API_TIMEOUT_SECONDS: int = 30
+
+    # Phase 3: Notion Internal Integration (RV-DEC-P3-0002)
+    RV_NOTION_API_VERSION: str = "2026-03-11"
+    RV_NOTION_TOKEN: str = ""
+    RV_NOTION_API_TIMEOUT_SECONDS: int = 30
+    RV_NOTION_WEBHOOK_VERIFICATION_TOKEN: str = ""
+
 
 settings = Settings()
