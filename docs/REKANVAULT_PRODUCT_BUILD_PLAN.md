@@ -370,7 +370,7 @@ An authorized user can:
 - Slide-level extraction.
 - OCR for scanned files.
 - Audio and video transcription.
-- Governed web research.
+- Governed web research. *(Planned post-P7 — an agentic consumer of the retrieval/memory/answer pipeline, not a prerequisite.)*
 - Automatic actions in external systems.
 - Multiple organizations with workload isolation.
 - A dedicated graph database.
@@ -1302,6 +1302,7 @@ The implementation must prove this complete loop:
 - Event- or time-triggered context refresh.
 - Stale-decision, risk, contradiction, and review alerts.
 - Additional source connectors.
+- Governed web research — agentic external browsing, querying the grounded retrieval/memory/answer pipeline. Consumer of existing APIs, not a prerequisite.
 
 Proactive capabilities remain explainable and cannot execute external actions without separate authorization.
 
