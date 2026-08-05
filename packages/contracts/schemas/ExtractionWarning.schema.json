@@ -1,0 +1,24 @@
+{
+  "description": "Non-fatal extraction issue raised by a connector (skip + continue).",
+  "properties": {
+    "code": {
+      "title": "Code",
+      "type": "string"
+    },
+    "message": {
+      "title": "Message",
+      "type": "string"
+    },
+    "document_external_id": {
+      "title": "Document External Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "document_external_id"
+  ],
+  "title": "ExtractionWarning",
+  "type": "object"
+}

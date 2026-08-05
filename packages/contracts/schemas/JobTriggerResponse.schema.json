@@ -1,0 +1,24 @@
+{
+  "description": "Response for ``POST /sources/{id}/sync`` and ``/reconcile``.",
+  "properties": {
+    "sync_job_id": {
+      "title": "Sync Job Id",
+      "type": "string"
+    },
+    "job_type": {
+      "title": "Job Type",
+      "type": "string"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sync_job_id",
+    "job_type",
+    "status"
+  ],
+  "title": "JobTriggerResponse",
+  "type": "object"
+}

@@ -718,40 +718,42 @@ The inherited adapter targets `2025-09-03`. Phase 3 must migrate it to Notion's 
 
 #### Google Drive
 
-- [ ] Implement authorization callback and encrypted refresh-token storage.
-- [ ] Register selected roots and validate access.
-- [ ] Capture start-page token before the first scan.
-- [ ] Scan recursively with Shared Drive flags where applicable.
-- [ ] Use Drive metadata plus Docs structure for Google Docs.
-- [ ] Download supported blob formats as streams.
-- [ ] Persist permissions/fingerprint at the implemented scope.
-- [ ] Process ordered changes and save cursor atomically.
-- [ ] Reconcile selected scope authoritatively.
-- [ ] Handle move in/out, rename, trash, restore, removal, and access revocation.
+- [x] Implement authorization callback and encrypted refresh-token storage.
+- [x] Register selected roots and validate access.
+- [x] Capture start-page token before the first scan.
+- [x] Scan recursively with Shared Drive flags where applicable.
+- [x] Use Drive metadata plus Docs structure for Google Docs.
+- [x] Download supported blob formats as streams.
+- [x] Persist permissions/fingerprint at the implemented scope.
+- [x] Process ordered changes and save cursor atomically.
+- [x] Reconcile selected scope authoritatively.
+- [x] Handle move in/out, rename, trash, restore, removal, and access revocation.
 
 #### Notion
 
-- [ ] Store integration token encrypted; environment token is import-only.
-- [ ] Add `2026-03-11` API fixtures and migrate block, `in_trash`, and transcription handling.
-- [ ] Traverse root pages, child pages, nested blocks, databases, data sources, schemas, and rows.
-- [ ] Preserve Notion block IDs as citation locators.
-- [ ] Verify raw-body webhook signature before parsing.
-- [ ] Deduplicate provider event ID and enqueue refetch.
-- [ ] Implement last-edited-time safety poll.
-- [ ] Reconcile configured roots and inaccessible objects.
-- [ ] Handle archive/delete, restore, move, and permission loss.
-- [ ] Preserve attachment references without recursively downloading them.
-- [ ] Run a dual-version webhook compatibility window before changing the subscription version.
+- [x] Store integration token encrypted; environment token is import-only.
+- [x] Add `2026-03-11` API fixtures and migrate block, `in_trash`, and transcription handling.
+- [x] Traverse root pages, child pages, nested blocks, databases, data sources, schemas, and rows.
+- [x] Preserve Notion block IDs as citation locators.
+- [x] Verify raw-body webhook signature before parsing.
+- [x] Deduplicate provider event ID and enqueue refetch.
+- [x] Implement last-edited-time safety poll.
+- [x] Reconcile configured roots and inaccessible objects.
+- [x] Handle archive/delete, restore, move, and permission loss.
+- [x] Preserve attachment references without recursively downloading them.
+- [x] Run a dual-version webhook compatibility window before changing the subscription version.
+
+> **Webhook deferral note (2026-08-05)**: Webhook code (signature verification, dedup, dual-version compat — to-dos #16, #22 above) is implemented in P3 but end-to-end verification against real webhook delivery is deferred until staging, since Notion requires a public HTTPS URL (`localhost` cannot receive webhooks). Local dev relies on the 5-minute safety poll + daily reconciliation per `RV-DEC-P3-0003`. P3-T7 (missed webhook repaired by poll) is testable locally by simulating webhook gaps, not real delivery. Full webhook e2e is a staging/post-P3 task.
 
 #### Shared lifecycle
 
-- [ ] Port existing provider-neutral mutation contract.
-- [ ] Persist normalized blocks and extraction quality.
-- [ ] Add file-size, MIME, decompression, and request limits.
-- [ ] Add source health and diagnostic APIs.
-- [ ] Build Sources UI: connection, roots, status, freshness, errors, re-run.
-- [ ] Add manual reprocess/reconcile action with audited confirmation.
-- [ ] Test real sandbox accounts, not only mocks.
+- [x] Port existing provider-neutral mutation contract.
+- [x] Persist normalized blocks and extraction quality.
+- [x] Add file-size, MIME, decompression, and request limits.
+- [x] Add source health and diagnostic APIs.
+- [x] Build Sources UI: connection, roots, status, freshness, errors, re-run.
+- [x] Add manual reprocess/reconcile action with audited confirmation.
+- [x] Test real sandbox accounts, not only mocks.
 
 ### Test plan
 

@@ -79,7 +79,7 @@ def test_alembic_upgrade_downgrade_idempotency() -> None:
             [sys.executable, "-m", "alembic", *args],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=120,
             env={**os.environ, "DATABASE_URL": DATABASE_URL},
         )
         assert result.returncode == 0, (

@@ -5,18 +5,31 @@ from pydantic import BaseModel
 
 from rekanvault.contracts.audit import AuditLogEntry
 from rekanvault.contracts.context import ContextPack, GroundedAnswer
-from rekanvault.contracts.documents import DocumentBlock, DocumentVersion, NormalizedDocument
+from rekanvault.contracts.documents import (
+    DocumentBlock,
+    DocumentVersion,
+    ExtractionWarning,
+    NormalizedDocument,
+)
 from rekanvault.contracts.errors import ErrorEnvelope
 from rekanvault.contracts.events import LifecycleEvent
 from rekanvault.contracts.evidence import Citation, EvidenceChunk, RerankedEvidence
 from rekanvault.contracts.graph import EntityRecord, RelationRecord
 from rekanvault.contracts.memory import MemoryRecord
 from rekanvault.contracts.skills import SkillNode, SkillProgress
+from rekanvault.contracts.sources import (
+    JobTriggerResponse,
+    RegisterSourceRequest,
+    SourceDetail,
+    SourceHealth,
+    SourceSummary,
+)
 
 EXPORT_MODELS: dict[str, type[BaseModel]] = {
     "NormalizedDocument": NormalizedDocument,
     "DocumentVersion": DocumentVersion,
     "DocumentBlock": DocumentBlock,
+    "ExtractionWarning": ExtractionWarning,
     "ErrorEnvelope": ErrorEnvelope,
     "LifecycleEvent": LifecycleEvent,
     "EvidenceChunk": EvidenceChunk,
@@ -30,6 +43,11 @@ EXPORT_MODELS: dict[str, type[BaseModel]] = {
     "SkillNode": SkillNode,
     "SkillProgress": SkillProgress,
     "AuditLogEntry": AuditLogEntry,
+    "RegisterSourceRequest": RegisterSourceRequest,
+    "SourceSummary": SourceSummary,
+    "SourceDetail": SourceDetail,
+    "SourceHealth": SourceHealth,
+    "JobTriggerResponse": JobTriggerResponse,
 }
 
 

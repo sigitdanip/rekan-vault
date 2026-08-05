@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from apps.api.config import settings
+from apps.api.routers.sources import router as sources_router
 from rekanvault.contracts.errors import ErrorCode, ErrorDetail, ErrorEnvelope, RekanVaultError
 
 START_TIME = time.time()
@@ -92,6 +93,9 @@ async def version_info() -> dict[str, Any]:
         "environment": settings.RV_ENV,
         "api_base_url": settings.RV_API_BASE_URL,
     }
+
+
+app.include_router(sources_router, prefix="/api/v1/sources", tags=["Sources"])
 
 
 def export_openapi_schema(output_path: Path) -> None:

@@ -8,13 +8,17 @@ from __future__ import annotations
 
 import base64
 import os
-from typing import Dict, Tuple
+import uuid
+from typing import TYPE_CHECKING, Dict, Tuple
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.api.config import settings
+
+if TYPE_CHECKING:
+    from rekanvault.storage.models import Credential
 
 
 class KeyManager:
@@ -94,6 +98,35 @@ class CredentialEncryptor:
         iv = base64.b64decode(iv_b64.encode("ascii"))
         plaintext_bytes = aesgcm.decrypt(iv, ciphertext, None)
         return plaintext_bytes.decode("utf-8")
+
+    async def encrypt_and_persist(
+        self,
+        session: AsyncSession,
+        workspace_id: uuid.UUID,
+        source_id: uuid.UUID,
+        plaintext: str,
+    ) -> Credential:
+        """Encrypt ``plaintext`` and stage a new ``Credential`` row on ``session``.
+
+        The caller owns the transaction — they decide when to ``commit()``.
+        Uses the active key from ``KeyManager``. Existing rows for the same
+        ``source_id`` are NOT removed here; callers wanting upsert semantics
+        should use ``rekanvault.sources.credential_repo`` instead.
+        """
+        # Local import: avoids a circular import (storage -> governance) and
+        # keeps the encryption module's import graph flat for tests.
+        from rekanvault.storage.models import Credential
+
+        ciphertext_b64, iv_b64, key_id = self.encrypt(plaintext)
+        cred = Credential(
+            workspace_id=workspace_id,
+            source_id=source_id,
+            key_id=key_id,
+            ciphertext=ciphertext_b64,
+            iv=iv_b64,
+        )
+        session.add(cred)
+        return cred
 
     async def reencrypt_credentials(self, session: AsyncSession) -> int:
         """

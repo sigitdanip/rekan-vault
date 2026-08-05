@@ -1,0 +1,157 @@
+{
+  "$defs": {
+    "SourceRootEntry": {
+      "properties": {
+        "external_id": {
+          "title": "External Id",
+          "type": "string"
+        },
+        "path_or_name": {
+          "title": "Path Or Name",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "external_id",
+        "path_or_name",
+        "created_at"
+      ],
+      "title": "SourceRootEntry",
+      "type": "object"
+    },
+    "SyncJobEntry": {
+      "properties": {
+        "sync_job_id": {
+          "title": "Sync Job Id",
+          "type": "string"
+        },
+        "job_type": {
+          "title": "Job Type",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Started At"
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completed At"
+        },
+        "stats": {
+          "additionalProperties": true,
+          "title": "Stats",
+          "type": "object"
+        }
+      },
+      "required": [
+        "sync_job_id",
+        "job_type",
+        "status"
+      ],
+      "title": "SyncJobEntry",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "source_id": {
+      "title": "Source Id",
+      "type": "string"
+    },
+    "workspace_id": {
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "provider": {
+      "title": "Provider",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    },
+    "config": {
+      "additionalProperties": true,
+      "title": "Config",
+      "type": "object"
+    },
+    "roots": {
+      "items": {
+        "$ref": "#/$defs/SourceRootEntry"
+      },
+      "title": "Roots",
+      "type": "array"
+    },
+    "cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cursor"
+    },
+    "cursor_updated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cursor Updated At"
+    },
+    "recent_jobs": {
+      "items": {
+        "$ref": "#/$defs/SyncJobEntry"
+      },
+      "title": "Recent Jobs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_id",
+    "workspace_id",
+    "provider",
+    "name",
+    "status"
+  ],
+  "title": "SourceDetail",
+  "type": "object"
+}

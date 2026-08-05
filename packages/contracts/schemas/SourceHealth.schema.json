@@ -1,0 +1,75 @@
+{
+  "properties": {
+    "source_id": {
+      "title": "Source Id",
+      "type": "string"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    },
+    "online": {
+      "title": "Online",
+      "type": "boolean"
+    },
+    "last_sync_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Sync At"
+    },
+    "last_sync_status": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Sync Status"
+    },
+    "error_count": {
+      "default": 0,
+      "title": "Error Count",
+      "type": "integer"
+    },
+    "warning_count": {
+      "default": 0,
+      "title": "Warning Count",
+      "type": "integer"
+    },
+    "cursor_freshness_seconds": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cursor Freshness Seconds"
+    },
+    "document_count": {
+      "default": 0,
+      "title": "Document Count",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "source_id",
+    "status",
+    "online"
+  ],
+  "title": "SourceHealth",
+  "type": "object"
+}

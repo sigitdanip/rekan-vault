@@ -1,0 +1,42 @@
+{
+  "description": "Body for ``POST /api/v1/sources``.",
+  "properties": {
+    "provider": {
+      "description": "Provider key \u2014 google_drive or notion",
+      "minLength": 1,
+      "title": "Provider",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 255,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "root_external_id": {
+      "description": "Provider-native ID of the root container",
+      "minLength": 1,
+      "title": "Root External Id",
+      "type": "string"
+    },
+    "root_path": {
+      "description": "Human-readable path/name for the root",
+      "minLength": 1,
+      "title": "Root Path",
+      "type": "string"
+    },
+    "config": {
+      "additionalProperties": true,
+      "title": "Config",
+      "type": "object"
+    }
+  },
+  "required": [
+    "provider",
+    "name",
+    "root_external_id",
+    "root_path"
+  ],
+  "title": "RegisterSourceRequest",
+  "type": "object"
+}

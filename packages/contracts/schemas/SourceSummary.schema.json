@@ -1,0 +1,65 @@
+{
+  "description": "Lightweight source row for the list endpoint.",
+  "properties": {
+    "source_id": {
+      "title": "Source Id",
+      "type": "string"
+    },
+    "provider": {
+      "title": "Provider",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    },
+    "workspace_id": {
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "last_sync_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Sync At"
+    },
+    "last_sync_status": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Sync Status"
+    }
+  },
+  "required": [
+    "source_id",
+    "provider",
+    "name",
+    "status",
+    "workspace_id",
+    "created_at"
+  ],
+  "title": "SourceSummary",
+  "type": "object"
+}

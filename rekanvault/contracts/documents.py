@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
@@ -49,3 +51,28 @@ class NormalizedDocument(BaseModel):
     updated_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     versions: list[DocumentVersion] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# P3: Source file extraction limits (RV-DEC-P3-0004).
+# 50 MiB — hardcoded because contracts must not import from apps.* (would
+# create a circular import: apps -> rekanvault.contracts -> apps.config).
+# Kept in sync with RV_MAX_SOURCE_FILE_BYTES in apps/api/config.py.
+MAX_SOURCE_FILE_BYTES: int = 50 * 1024 * 1024  # 52_428_800
+
+SUPPORTED_MIME_TYPES: dict[str, str] = {
+    "application/vnd.google-apps.document": "Google Docs",
+    "application/vnd.google-apps.spreadsheet": "Google Sheets",
+    "application/vnd.google-apps.presentation": "Google Slides",
+    "application/pdf": "PDF",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "DOCX",
+    "text/markdown": "Markdown",
+    "text/plain": "Plain Text",
+}
+
+
+class ExtractionWarning(BaseModel):
+    """Non-fatal extraction issue raised by a connector (skip + continue)."""
+
+    code: str
+    message: str
+    document_external_id: str
