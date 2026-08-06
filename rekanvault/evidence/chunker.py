@@ -41,7 +41,7 @@ from rekanvault.storage.models import ContentBlock
 MAX_BLOCK_TOKENS: int = 450  # ADR: ~450 tokens per chunk
 OVERLAP_TOKENS: int = 80  # ADR: 80-token overlap within an oversized block
 WINDOW_TOKENS: int = MAX_BLOCK_TOKENS  # split-window size = full budget
-MAX_BLOCK_CHARS: int = 100_000  # skip blocks larger than this (4MB email dumps etc)
+MAX_BLOCK_CHARS: int = 90_000  # split blocks larger than this into segments
 
 # tiktoken is stable across runs; cache the encoding on the class.
 _ENCODING = tiktoken.get_encoding("cl100k_base")
@@ -86,15 +86,16 @@ class Chunker:
             return []
 
         document = version.document
-        blocks = await self._repo.get_content_blocks(session, document_version_id)
-        if not blocks:
+        blocks_raw = await self._repo.get_content_blocks(session, document_version_id)
+        if not blocks_raw:
             return []
+        blocks = list(blocks_raw)
 
-        # Skip oversized blocks — 4MB email dumps etc. can't be meaningfully
-        # chunked on CPU and would OOM/timeout the tiktoken encoder.
-        blocks = [b for b in blocks if len(b.content_text) <= MAX_BLOCK_CHARS]
-        if not blocks:
-            return []
+        # Split oversized blocks into ~MAX_BLOCK_CHARS segments so the
+        # tiktoken encoder doesn't OOM on 4MB email dumps. Each segment
+        # inherits the block's metadata; the chunker treats them as
+        # independent blocks from the same source position.
+        blocks = _maybe_split_oversized(blocks)
 
         external_id = document.external_id
         version_number = version.version_number
@@ -118,6 +119,45 @@ def _plan_chunks(blocks: list[ContentBlock]) -> list[_PlannedChunk]:
         else:
             _merge_or_emit(planned, block, tokens)
     return planned
+
+
+def _maybe_split_oversized(blocks: list[ContentBlock]) -> list[ContentBlock]:
+    """Split blocks exceeding MAX_BLOCK_CHARS into smaller segments.
+
+    Each segment is a new ContentBlock with the same metadata, block_type,
+    and workspace_id as the parent. The chunker then processes each segment
+    independently, keeping the tiktoken encoder within bounds.
+    """
+    result: list[ContentBlock] = []
+    for b in blocks:
+        text = b.content_text
+        if len(text) <= MAX_BLOCK_CHARS:
+            result.append(b)
+            continue
+        seg = 0
+        pos = 0
+        while pos < len(text):
+            end = min(pos + MAX_BLOCK_CHARS, len(text))
+            # Try to break at a newline for cleaner splits
+            if end < len(text):
+                nl = text.rfind("\n", pos, end)
+                if nl > pos + (MAX_BLOCK_CHARS // 2):
+                    end = nl + 1
+            segment_text = text[pos:end]
+            result.append(
+                ContentBlock(
+                    id=uuid.uuid4(),
+                    document_version_id=b.document_version_id,
+                    workspace_id=b.workspace_id,
+                    block_index=b.block_index,
+                    block_type=b.block_type,
+                    content_text=segment_text,
+                    metadata_=dict(b.metadata_ or {}),
+                )
+            )
+            seg += 1
+            pos = end
+    return result
 
 
 def _merge_or_emit(planned: list[_PlannedChunk], block: ContentBlock, tokens: int) -> None:
