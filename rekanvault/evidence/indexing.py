@@ -83,18 +83,17 @@ class IndexingPipeline:
                 {
                     "chunk_id": chunk.chunk_id,
                     "embedding": vector,
-                    "payload": {
-                        "workspace_id": str(chunk.workspace_id),
-                        "document_id": str(document.id),
-                        "version_id": str(document_version_id),
-                        "chunk_text": chunk.content_text[:CHUNK_TEXT_PAYLOAD_MAX_CHARS],
-                        "block_start": chunk.start_block_index,
-                        "block_end": chunk.end_block_index,
-                        "source_type": source_type,
-                        "status": "active",
-                        "created_at": now_iso,
-                        "corpus_id": str(document.corpus_id) if document.corpus_id else None,
-                    },
+                    "workspace_id": str(chunk.workspace_id),
+                    "document_id": str(document.id),
+                    "version_id": str(document_version_id),
+                    "chunk_text": chunk.content_text[:CHUNK_TEXT_PAYLOAD_MAX_CHARS],
+                    "doc_title": document.title,
+                    "block_start": chunk.start_block_index,
+                    "block_end": chunk.end_block_index,
+                    "source_type": source_type,
+                    "status": "active",
+                    "created_at": now_iso,
+                    "corpus_id": str(document.corpus_id) if document.corpus_id else None,
                 }
             )
 
