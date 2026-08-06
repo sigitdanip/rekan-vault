@@ -36,6 +36,7 @@ pnpm install && pnpm run typecheck && pnpm run build
 4. **mypy strict mode** — no `type: ignore` without a comment explaining why.
 5. **Ruff line length 120**, rules E/F/I/B. E501 (line length) is suppressed globally.
 6. **pytest asyncio_mode = auto** — async test functions work without `@pytest.mark.asyncio`.
+7. **ALWAYS run the full ingestion pipeline in verification/eval scripts.** Postgres is the authoritative store. Documents MUST flow through `DocumentRepository.upsert_document()` (writes ContentBlock rows + populates tsvector for lexical search), then `IndexingPipeline.index_version()` (chunks → embeds → Qdrant). NEVER bypass Postgres and index directly to Qdrant — lexical search depends on populated `content_blocks`. This bit us in P4-GATE verification and wasted 45 minutes debugging zero recall.
 
 ## Environment
 

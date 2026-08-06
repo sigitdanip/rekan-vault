@@ -12,6 +12,7 @@ from typing import Any, Optional
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Computed,
     DateTime,
     ForeignKey,
     Index,
@@ -266,7 +267,7 @@ class ContentBlock(Base):
     block_type: Mapped[str] = mapped_column(String(64), default="text", nullable=False)
     content_text: Mapped[str] = mapped_column(Text, nullable=False)
     content_tsvector: Mapped[Any] = mapped_column(
-        "content_tsvector", TSVECTOR(), nullable=True
+        "content_tsvector", TSVECTOR(), Computed("to_tsvector('simple'::regconfig, content_text)", persisted=True), nullable=True
     )  # ponytail: GENERATED column managed by migration 0002; ORM reads only
     metadata_: Mapped[dict[str, Any]] = mapped_column("metadata", JSONB, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
