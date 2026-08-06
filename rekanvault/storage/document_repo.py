@@ -187,6 +187,21 @@ class DocumentRepository:
                 )
             )
 
+        # Enqueue an indexing job for the worker. Direct enqueue is the
+        # ponytail move: a transactional outbox adds a second table +
+        # second consumer for the single-process pilot. Swap to
+        # ``create_outbox_event`` when cross-service delivery matters.
+        from rekanvault.storage.jobs import JobQueueManager
+
+        await JobQueueManager(session).enqueue_job(
+            workspace_id=workspace_id,
+            job_type="index_document_version",
+            payload={
+                "document_version_id": str(version.id),
+                "document_id": str(document.id),
+            },
+        )
+
         return document
 
     async def _insert_new_version(
@@ -234,6 +249,19 @@ class DocumentRepository:
                 )
             )
 
+        # ponytail: same trade-off as _insert_new — direct enqueue now,
+        # outbox when cross-service delivery is needed.
+        from rekanvault.storage.jobs import JobQueueManager
+
+        await JobQueueManager(session).enqueue_job(
+            workspace_id=workspace_id,
+            job_type="index_document_version",
+            payload={
+                "document_version_id": str(version.id),
+                "document_id": str(document.id),
+            },
+        )
+
         return document
 
     async def _latest_version(
@@ -249,6 +277,38 @@ class DocumentRepository:
         )
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def list_versions_for_document(
+        self,
+        session: AsyncSession,
+        document_id: uuid.UUID,
+    ) -> list[DocumentVersion]:
+        """All versions of a document, newest first.
+
+        Used by the indexing pipeline to deactivate older versions when
+        a new one is written. Ordered so callers can short-circuit
+        ``versions[0]`` as the latest.
+        """
+        stmt = (
+            select(DocumentVersion)
+            .where(DocumentVersion.document_id == document_id)
+            .order_by(DocumentVersion.version_number.desc())
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_latest_version(
+        self,
+        session: AsyncSession,
+        document_id: uuid.UUID,
+    ) -> DocumentVersion | None:
+        """Public alias for the latest version of a document.
+
+        Same query as the internal ``_latest_version``; exposed because
+        the worker deactivation handler needs to find the current head
+        without a version_id in the payload.
+        """
+        return await self._latest_version(session, document_id)
 
     async def deactivate_document(
         self,

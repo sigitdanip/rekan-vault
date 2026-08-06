@@ -24,9 +24,14 @@ import uuid
 from typing import Any, Awaitable, Callable
 
 from apps.api.config import settings
+from rekanvault.evidence.chunker import Chunker
+from rekanvault.evidence.embedding import EmbeddingService
+from rekanvault.evidence.indexing import IndexingPipeline
 from rekanvault.sources.manager import SourceManager
 from rekanvault.storage.database import _async_session_factory, init_db
+from rekanvault.storage.document_repo import DocumentRepository
 from rekanvault.storage.jobs import JobQueueManager
+from rekanvault.storage.qdrant import QdrantStore
 
 # Job handler signature: ``async (session, payload) -> None``.
 # On success, complete_job. On raised exception, fail_job (auto dead-letters
@@ -61,10 +66,50 @@ async def _handle_reconcile_source(session: Any, payload: dict[str, Any]) -> Non
     await manager.run_sync(session=session, workspace_id=workspace_id, source_id=source_id)
 
 
+def _build_pipeline(session: Any) -> IndexingPipeline:
+    """Construct an IndexingPipeline with shared collaborators.
+
+    Single source of truth for the DI graph used by both index and
+    deactivate handlers. ponytail: caller ensures the Qdrant collection
+    exists before the first index job.
+    """
+    doc_repo = DocumentRepository()
+    return IndexingPipeline(
+        session=session,
+        chunker=Chunker(repo=doc_repo),
+        embed=EmbeddingService(),
+        qdrant=QdrantStore(settings),
+        doc_repo=doc_repo,
+    )
+
+
+async def _handle_index_document_version(session: Any, payload: dict[str, Any]) -> None:
+    pipeline = _build_pipeline(session)
+    document_version_id = uuid.UUID(str(payload["document_version_id"]))
+    await pipeline.index_version(document_version_id)
+
+
+async def _handle_deactivate_document(session: Any, payload: dict[str, Any]) -> None:
+    """Drop a document from the index AND mark it deactivated in Postgres.
+
+    Payload carries ``document_id``; the latest version's chunks are
+    removed from Qdrant, then the row status flips to ``deactivated``.
+    """
+    pipeline = _build_pipeline(session)
+    document_id = uuid.UUID(str(payload["document_id"]))
+    doc_repo = DocumentRepository()
+    latest = await doc_repo.get_latest_version(session, document_id)
+    if latest is not None:
+        await pipeline.deactivate_version(latest.id)
+    await doc_repo.deactivate_document(session, document_id)
+
+
 JOB_HANDLERS: dict[str, JobHandler] = {
     "sync_source": _handle_sync_source,
     "scan_source": _handle_scan_source,
     "reconcile_source": _handle_reconcile_source,
+    "index_document_version": _handle_index_document_version,
+    "deactivate_document": _handle_deactivate_document,
 }
 
 
@@ -110,6 +155,17 @@ class WorkerDaemon:
                 init_db()
             except Exception as exc:  # noqa: BLE001 — startup is best-effort
                 print(f"[Worker {self.worker_id}] DB init skipped: {exc}")
+
+        # Best-effort Qdrant collection init. ``ensure_collection`` is
+        # idempotent, so re-running on every boot is safe. Skipped if
+        # Qdrant is unreachable — the first index job will then fail
+        # loudly and the worker keeps polling.
+        try:
+            qdrant = QdrantStore(settings)
+            await qdrant.ensure_collection()
+            await qdrant.close()
+        except Exception as exc:  # noqa: BLE001 — startup is best-effort
+            print(f"[Worker {self.worker_id}] Qdrant init skipped: {exc}")
 
         await self._dispatch_loop()
 
