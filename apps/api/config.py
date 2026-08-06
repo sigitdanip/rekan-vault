@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     RV_EMBEDDING_BATCH_SIZE: int = 4
     RV_MODEL_CACHE_PATH: str = ""
     HF_HOME: str = ""
+    HF_TOKEN: str = ""
     RV_MODEL_CPU_THREADS: int = 0
 
     # Phase 4: Cross-Encoder Reranker (RV-DEC-P4-0003)

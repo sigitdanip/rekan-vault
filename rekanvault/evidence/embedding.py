@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Sequence
 
 from sentence_transformers import CrossEncoder, SentenceTransformer
 
 from apps.api.config import settings
+
+# Propagate HF_TOKEN from pydantic-settings into os.environ so
+# huggingface_hub picks it up directly (it doesn't read .env files).
+if settings.HF_TOKEN:
+    os.environ.setdefault("HF_TOKEN", settings.HF_TOKEN)
 
 
 class EmbeddingService:
