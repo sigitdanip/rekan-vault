@@ -189,17 +189,19 @@ async def test_upsert_chunks_stages_point_structs_with_dense_vector() -> None:
     assert len(points) == 2
     assert all(isinstance(p, models.PointStruct) for p in points)
 
-    # IDs match the chunk_id, vectors are the dense-named dense payload.
-    assert [p.id for p in points] == ["doc_a#v1#chunk_0", "doc_a#v1#chunk_1"]
+    # Original locator preserved in payload; Qdrant point ID is a derived UUID.
+    assert [p.payload["chunk_locator"] for p in points] == ["doc_a#v1#chunk_0", "doc_a#v1#chunk_1"]  # type: ignore[index]
     for p in points:
-        assert isinstance(p.vector, dict)
+        assert isinstance(p.id, str)
+        assert len(p.id) == 36  # UUID string length
+        assert isinstance(p.vector, dict)  # type: ignore[union-attr]
         assert DenseVectorName in p.vector
         assert list(p.vector[DenseVectorName]) == embedding
 
-    # Payload: every key in PAYLOAD_KEYS is present and no extras leak.
+    # Payload: every key in PAYLOAD_KEYS plus chunk_locator, no extras leak.
     first_payload = points[0].payload
     assert first_payload is not None
-    assert set(first_payload.keys()) == set(PAYLOAD_KEYS)
+    assert set(first_payload.keys()) == set(PAYLOAD_KEYS) | {"chunk_locator"}
     assert "extra_field_dropped" not in first_payload
     assert first_payload["workspace_id"] == "ws_1"
     assert first_payload["chunk_text"] == "hello world"

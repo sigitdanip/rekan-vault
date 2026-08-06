@@ -25,6 +25,7 @@ one.
 
 from __future__ import annotations
 
+import uuid
 from typing import Any, Iterable
 
 from qdrant_client import AsyncQdrantClient
@@ -132,9 +133,10 @@ class QdrantStore:
             chunk_id = chunk["chunk_id"]
             embedding = chunk["embedding"]
             payload = {key: chunk[key] for key in PAYLOAD_KEYS if key in chunk}
+            payload["chunk_locator"] = chunk_id  # preserve original locator for citation tracing
             points.append(
                 models.PointStruct(
-                    id=chunk_id,
+                    id=str(uuid.uuid5(uuid.NAMESPACE_OID, chunk_id)),  # ponytail: Qdrant requires UUID/int; hash locator → deterministic UUID
                     vector={DenseVectorName: embedding},
                     payload=payload,
                 )
