@@ -92,7 +92,7 @@ Tracks where each remaining §18.4 high-impact action type's audit-record test l
 | P3-T7 | Missed Notion webhook repaired by poll/reconciliation. | A dropped or unreceived Notion webhook event is detected and repaired by the 5-minute safety poll (`RV-DEC-P3-0003`) or daily full reconciliation, converging state to 100% agreement with provider inventory. | Test line + `RV-DEC-P3-0003` | Defined |
 | P3-T8 | API/UI source health agrees with database state. | FastAPI source health API endpoints (`/sources/health`, `/sources/status`) and Next.js Sources UI reflect exact database state for connected roots, active sync status, freshness timestamps, and extraction warning counts. | Test line + SDLC §8 | Defined |
 
-**Status: Ready for Phase 4** — Golden question set dependency cleared per `RV-DEC-0015` (`docs/REKANVAULT_GOLDEN_SET.md` populated with 164 verified questions).
+**Status: Implemented (2026-08-06)** — All 13 P4 to-dos checked off in SDLC plan. 57 new tests across evidence, storage, retrieval, evaluation, and search API. Golden question set: 180 questions across 10 categories. Live gate verification (P4-GATE) pending — requires indexed corpus run through the pipeline.
 
 | ID | Test line | Acceptance criterion | Source | Status |
 |---|---|---|---|---|

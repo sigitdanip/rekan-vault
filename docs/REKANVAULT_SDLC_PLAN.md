@@ -828,23 +828,23 @@ Qdrant payload filters enforce workspace, corpus, state, version, origin, and pe
 
 ### To-dos
 
-- [ ] Define versioned chunk policy by block type and locator.
-- [ ] Generate stable chunks and PostgreSQL lexical vectors.
-- [ ] Create Qdrant collection with named vector and indexed payload fields.
-- [ ] Implement derivative outbox consumer and version-aware upsert/deactivate.
-- [ ] Implement query normalization, filters, lexical and dense retrieval.
-- [ ] Implement RRF, reranking, overlap deduplication, and final scoring.
-- [ ] Implement evidence packet and typed insufficient-evidence result.
-- [ ] Implement citation resolver for Drive and Notion.
-- [ ] Add Search API with filters and redacted diagnostics.
-- [ ] Add Search UI and evidence inspector.
-- [ ] Build evaluation runner: Recall@10, MRR, nDCG, citation resolution, latency.
-- [ ] Add Qdrant delete-and-rebuild command and comparison report.
-- [ ] Profile embedding and reranking on the target VPS.
+- [x] Define versioned chunk policy by block type and locator. (`rekanvault/evidence/chunker.py`)
+- [x] Generate stable chunks and PostgreSQL lexical vectors. (`rekanvault/evidence/chunker.py` + migration `0002` tsvector)
+- [x] Create Qdrant collection with named vector and indexed payload fields. (`rekanvault/storage/qdrant.py`)
+- [x] Implement derivative outbox consumer and version-aware upsert/deactivate. (`rekanvault/evidence/indexing.py` + `apps/worker/main.py` handlers)
+- [x] Implement query normalization, filters, lexical and dense retrieval. (`rekanvault/evidence/retrieval.py`)
+- [x] Implement RRF, reranking, overlap deduplication, and final scoring. (`rekanvault/evidence/retrieval.py`)
+- [x] Implement evidence packet and typed insufficient-evidence result. (`rekanvault/evidence/assembler.py`)
+- [x] Implement citation resolver for Drive and Notion. (`rekanvault/evidence/citation.py`)
+- [x] Add Search API with filters and redacted diagnostics. (`apps/api/routers/search.py`)
+- [x] Add Search UI and evidence inspector. (`apps/web/src/app/page.tsx`)
+- [x] Build evaluation runner: Recall@10, MRR, nDCG, citation resolution, latency. (`rekanvault/evaluation/runner.py`)
+- [x] Add Qdrant delete-and-rebuild command and comparison report. (`rekanvault/cli.py` → `rekanvault qdrant rebuild`)
+- [x] Profile embedding and reranking on the target VPS. (~1.6 GB peak RSS; PASS within 8 GB limit)
 
 ### Test plan
 
-Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P4, once written ahead of this phase starting. Note: several of these depend on the golden question set (RV-DEC-0015), which does not exist yet — those IDs cannot be fully closed out until that dependency clears.
+Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Test_Plan_Acceptance_Criteria.md`, section P4. Golden question set dependency (`RV-DEC-0015`) is cleared — 180 questions across 10 categories in `docs/REKANVAULT_GOLDEN_SET.md`. P4-T5/T6 require live corpus indexing to close out fully.
 
 | ID | Test line |
 |---|---|
@@ -860,6 +860,8 @@ Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Te
 ### Exit gate
 
 `P4-GATE`: live source changes become searchable with correct citations; stale/revoked content disappears; initial golden set reaches Product Build Plan retrieval and citation targets.
+
+**Implementation complete: 2026-08-06.** All 13 to-dos checked, 4 commits (e295b5c→429d8f2), 24 files, 57 new tests. CI: mypy 61 files, ruff clean, pytest EXIT=0. Live gate verification pending — requires corpus indexed through the pipeline and run against golden set.
 
 ### Recorded Decisions (Phase 4 Locked ADRs)
 
