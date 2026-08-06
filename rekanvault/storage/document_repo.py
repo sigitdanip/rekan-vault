@@ -263,6 +263,21 @@ class DocumentRepository:
             doc.status = "deactivated"
             doc.deactivated_at = datetime.now(timezone.utc)
 
+    async def get_version(
+        self,
+        session: AsyncSession,
+        document_version_id: uuid.UUID,
+    ) -> DocumentVersion | None:
+        """Return a ``DocumentVersion`` with its ``document`` relationship
+        eagerly loaded, so callers (e.g. the chunker) can read
+        ``external_id`` and ``version_number`` without a second round-trip."""
+        stmt = (
+            select(DocumentVersion)
+            .where(DocumentVersion.id == document_version_id)
+        )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_content_blocks(
         self,
         session: AsyncSession,
