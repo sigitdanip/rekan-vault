@@ -41,6 +41,7 @@ from rekanvault.storage.models import ContentBlock
 MAX_BLOCK_TOKENS: int = 450  # ADR: ~450 tokens per chunk
 OVERLAP_TOKENS: int = 80  # ADR: 80-token overlap within an oversized block
 WINDOW_TOKENS: int = MAX_BLOCK_TOKENS  # split-window size = full budget
+MAX_BLOCK_CHARS: int = 100_000  # skip blocks larger than this (4MB email dumps etc)
 
 # tiktoken is stable across runs; cache the encoding on the class.
 _ENCODING = tiktoken.get_encoding("cl100k_base")
@@ -86,6 +87,12 @@ class Chunker:
 
         document = version.document
         blocks = await self._repo.get_content_blocks(session, document_version_id)
+        if not blocks:
+            return []
+
+        # Skip oversized blocks — 4MB email dumps etc. can't be meaningfully
+        # chunked on CPU and would OOM/timeout the tiktoken encoder.
+        blocks = [b for b in blocks if len(b.content_text) <= MAX_BLOCK_CHARS]
         if not blocks:
             return []
 
