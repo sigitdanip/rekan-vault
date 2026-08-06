@@ -131,7 +131,7 @@ class EvaluationRunner:
         """
         workspace_id = question.get("workspace_id")
         if workspace_id is None:
-            workspace_id = uuid.uuid4()
+            workspace_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
         if not isinstance(workspace_id, uuid.UUID):
             workspace_id = uuid.UUID(str(workspace_id))
 
