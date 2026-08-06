@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from rekanvault.contracts.documents import DocumentBlock as Block
 from rekanvault.contracts.documents import NormalizedDocument
@@ -333,6 +334,7 @@ class DocumentRepository:
         ``external_id`` and ``version_number`` without a second round-trip."""
         stmt = (
             select(DocumentVersion)
+            .options(selectinload(DocumentVersion.document).selectinload(Document.source))
             .where(DocumentVersion.id == document_version_id)
         )
         result = await session.execute(stmt)

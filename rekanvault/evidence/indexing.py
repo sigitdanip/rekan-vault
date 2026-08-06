@@ -71,13 +71,18 @@ class IndexingPipeline:
         vectors = self._embed.embed(texts)
 
         now_iso = datetime.now(UTC).isoformat()
-        source_type = document.source.provider if document.source is not None else "unknown"
+        source_type = "unknown"
+        try:
+            if document.source is not None:
+                source_type = document.source.provider
+        except Exception:
+            source_type = "unknown"
         points: list[dict[str, object]] = []
         for chunk, vector in zip(chunks, vectors, strict=True):
             points.append(
                 {
-                    "id": chunk.chunk_id,
-                    "vector": {"dense": vector},
+                    "chunk_id": chunk.chunk_id,
+                    "embedding": vector,
                     "payload": {
                         "workspace_id": str(chunk.workspace_id),
                         "document_id": str(document.id),
