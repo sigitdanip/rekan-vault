@@ -20,7 +20,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -220,6 +220,8 @@ class Document(Base):
     external_id: Mapped[str] = mapped_column(String(255), nullable=False)
     title: Mapped[str] = mapped_column(String(1024), nullable=False)
     mime_type: Mapped[str] = mapped_column(String(128), default="application/octet-stream", nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="active", nullable=False, index=True)
+    deactivated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
@@ -263,6 +265,9 @@ class ContentBlock(Base):
     block_index: Mapped[int] = mapped_column(Integer, nullable=False)
     block_type: Mapped[str] = mapped_column(String(64), default="text", nullable=False)
     content_text: Mapped[str] = mapped_column(Text, nullable=False)
+    content_tsvector: Mapped[Any] = mapped_column(
+        "content_tsvector", TSVECTOR(), nullable=True
+    )  # ponytail: GENERATED column managed by migration 0002; ORM reads only
     metadata_: Mapped[dict[str, Any]] = mapped_column("metadata", JSONB, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -254,10 +255,29 @@ class DocumentRepository:
         session: AsyncSession,
         document_id: uuid.UUID,
     ) -> None:
-        """Mark a document as removed from its upstream source."""
-        # ponytail: schema lacks deactivated_at column; callers still get
-        # a stable contract. Add SQL here when the column lands.
-        return None
+        """Mark a document as removed from its upstream source (P4-T4)."""
+        stmt = select(Document).where(Document.id == document_id)
+        result = await session.execute(stmt)
+        doc = result.scalar_one_or_none()
+        if doc is not None:
+            doc.status = "deactivated"
+            doc.deactivated_at = datetime.now(timezone.utc)
+
+    async def get_content_blocks(
+        self,
+        session: AsyncSession,
+        document_version_id: uuid.UUID,
+    ) -> list[ContentBlock]:
+        """Return all content blocks for a version, ordered by block_index.
+
+        Used by the chunking pipeline to read raw blocks for processing."""
+        stmt = (
+            select(ContentBlock)
+            .where(ContentBlock.document_version_id == document_version_id)
+            .order_by(ContentBlock.block_index)
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
 
     async def list_by_source(
         self,

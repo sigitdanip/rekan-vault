@@ -92,13 +92,18 @@ Tracks where each remaining §18.4 high-impact action type's audit-record test l
 | P3-T7 | Missed Notion webhook repaired by poll/reconciliation. | A dropped or unreceived Notion webhook event is detected and repaired by the 5-minute safety poll (`RV-DEC-P3-0003`) or daily full reconciliation, converging state to 100% agreement with provider inventory. | Test line + `RV-DEC-P3-0003` | Defined |
 | P3-T8 | API/UI source health agrees with database state. | FastAPI source health API endpoints (`/sources/health`, `/sources/status`) and Next.js Sources UI reflect exact database state for connected roots, active sync status, freshness timestamps, and extraction warning counts. | Test line + SDLC §8 | Defined |
 
-## P4 — Evidence Layer, Hybrid RAG, and Search
-
-*(Placeholder — several of this phase's test lines depend on the golden question set, which does not exist yet per RV-DEC-0015. Cannot be fully populated until that dependency clears.)*
+**Status: Ready for Phase 4** — Golden question set dependency cleared per `RV-DEC-0015` (`docs/REKANVAULT_GOLDEN_SET.md` populated with 164 verified questions).
 
 | ID | Test line | Acceptance criterion | Source | Status |
 |---|---|---|---|---|
-| — | — | — | — | Not yet elaborated |
+| `P4-T1` | Stable chunk IDs across identical reprocessing. | Reprocessing an unchanged document version produces identical chunk IDs and block locator mappings (`doc_id#v<n>#chunk_<seq>`). | Test line | Defined |
+| `P4-T2` | Active-version switch is atomic from a requester's perspective. | Promoting a new active document version immediately switches vector and lexical retrieval filters to return only chunks from the new active version, with zero stale version leak. | Test line + SDLC §9 | Defined |
+| `P4-T3` | Permission, corpus, source, type, time, and state filters. | Qdrant payload filters and PostgreSQL search queries strictly enforce workspace, corpus, source type, time, and active-version permission constraints. | Test line + SDLC §9 | Defined |
+| `P4-T4` | Stale/revoked evidence negative tests. | Searching for content from deactivated, revoked, or trashed source documents returns 0 matches or `INSUFFICIENT_EVIDENCE`. | Test line + SDLC §9 | Defined |
+| `P4-T5` | Exact phrase, Indonesian semantic, English semantic, mixed-language, acronym, and entity queries. | Golden question set queries (`Q-001`–`Q-060`, `Q-076`–`Q-158`) reach Recall@10 ≥ 0.90, MRR ≥ 0.85, nDCG@10 ≥ 0.88, and 100% citation resolution accuracy. | Test line + Product Plan §25 | Defined |
+| `P4-T6` | Known-unanswerable questions. | Out-of-corpus and unanswerable queries (`Q-061`–`Q-075`, `Q-096`–`Q-097`, `Q-159`–`Q-164`) return 100% `INSUFFICIENT_EVIDENCE` result packets. | Test line + Product Plan §25 | Defined |
+| `P4-T7` | Qdrant deletion and deterministic rebuild. | Purging the Qdrant vector collection and running the rebuild command restores 100% identical Qdrant points, payload metadata, and search retrieval performance from PostgreSQL and normalized VPS artifacts. | Test line + `RV-DEC-0009` | Defined |
+| `P4-T8` | Resource profile at realistic corpus size. | Embedding (`bge-m3`) and reranking (`bge-reranker-v2-m3`) worker execution during full corpus sync remains within target ~8 GB VPS resource limits. | Test line + SDLC §9 | Defined |
 
 ## P5 — Typed Memory Formation and Review
 

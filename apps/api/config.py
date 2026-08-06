@@ -54,5 +54,28 @@ class Settings(BaseSettings):
     RV_NOTION_WEBHOOK_VERIFICATION_TOKEN: str = ""
     RV_NOTION_PAGE_ID: str = ""
 
+    # Phase 4: Qdrant Cloud Vector Index (RV-DEC-P4-0001)
+    RV_QDRANT_URL: str = ""
+    RV_QDRANT_API_KEY: str = ""
+    RV_QDRANT_COLLECTION: str = "rekanvault_chunks_v1"
+    RV_QDRANT_TIMEOUT_SECONDS: int = 30
+
+    # Phase 4: Embeddings (RV-DEC-P4-0002)
+    RV_EMBEDDING_PROVIDER: str = "local_sentence_transformers"
+    RV_EMBEDDING_MODEL: str = "BAAI/bge-m3"
+    RV_EMBEDDING_MODEL_REVISION: str = ""
+    RV_EMBEDDING_DIMENSIONS: int = 1024
+    RV_EMBEDDING_DEVICE: str = "cpu"
+    RV_EMBEDDING_BATCH_SIZE: int = 4
+    RV_MODEL_CACHE_PATH: str = ""
+    HF_HOME: str = ""
+    RV_MODEL_CPU_THREADS: int = 0
+
+    # Phase 4: Cross-Encoder Reranker (RV-DEC-P4-0003)
+    RV_RERANK_PROVIDER: str = "local_cross_encoder"
+    RV_RERANK_MODEL: str = "BAAI/bge-reranker-v2-m3"
+    RV_RERANK_MODEL_REVISION: str = ""
+    RV_RERANK_TOP_N: int = 20
+
 
 settings = Settings()

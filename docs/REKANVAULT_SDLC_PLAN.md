@@ -861,15 +861,15 @@ Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Te
 
 `P4-GATE`: live source changes become searchable with correct citations; stale/revoked content disappears; initial golden set reaches Product Build Plan retrieval and citation targets.
 
-###  Open Decisions (Delete section if decision already recorded as ADR)  
+### Recorded Decisions (Phase 4 Locked ADRs)
 
-| Decision | Recommended default | Needed by | Effect |
-|---|---|---|---|
-| Qdrant deployment | Existing Qdrant Cloud for pilot; retain self-hosted Compose profile | P4 | VPS RAM and operational load |
-| Embedding model | Evaluate BGE-M3 against one smaller multilingual candidate; choose by Recall@10 and RAM/latency | P4 indexing | Quality and 8 GB fit |
-| Reranker | BGE reranker on top 20 with worker concurrency 1 | P4 query pipeline | Latency and quality |
-| Golden set size | Minimum 100 questions: exact, semantic, temporal, negative, and permission cases | P4 gate | Confidence in metrics |
-| Chunk policy | Structure-first; target about 450 tokens, limited 80-token overlap only across continuous prose | P4 | Retrieval/citation granularity |
+All Phase 4 architecture decisions are locked as approved ADRs:
+
+- **Qdrant Deployment (`RV-DEC-P4-0001`)**: Qdrant Cloud cluster for pilot vector index to minimize VPS RAM/CPU load.
+- **Embedding Model (`RV-DEC-P4-0002`)**: `BAAI/bge-m3` (1024-dim, multilingual support for English, Indonesian, and Javanese).
+- **Reranker (`RV-DEC-P4-0003`)**: `BAAI/bge-reranker-v2-m3` cross-encoder applied to top 20 candidate items with worker concurrency 1.
+- **Golden Set Expansion (`RV-DEC-0015`)**: 164 questions total (`docs/REKANVAULT_GOLDEN_SET.md` containing 100 baseline + 64 Batch 2 questions across exact, semantic, temporal, multihop, conflict, and insufficient categories).
+- **Chunk Policy (`RV-DEC-P4-0004`)**: Structure-first chunking targeting ~450 tokens, preserving block locators (`doc_id#v<n>#chunk_<seq>`) with 80-token overlap across continuous prose.
 
 ---
 

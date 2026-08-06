@@ -50,6 +50,10 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 | RV-DEC-P3-0004 | Source file size limit: 50 MiB default cap (`RV_MAX_SOURCE_FILE_BYTES`) | P3 | Approved | 2026-08-02 | `RekanVault_ADR_P3_0004_maximum-source-file-size-cap.md` |
 | RV-DEC-P3-0005 | Google Docs multi-tab ingestion: Parse all tabs & preserve tab locators (`doc_id#tab_id`) | P3 | Approved | 2026-08-02 | `RekanVault_ADR_P3_0005_google-docs-tab-ingestion.md` |
 | RV-DEC-P3-0006 | Notion attachments: Preserve attachment links & metadata only in 0.1.0 | P3 | Approved | 2026-08-02 | `RekanVault_ADR_P3_0006_notion-attachment-link-preservation.md` |
+| RV-DEC-P4-0001 | Qdrant deployment: Qdrant Cloud cluster for pilot retrieval index | P4 | Approved | 2026-08-06 | `RekanVault_ADR_P4_0001_qdrant-cloud-deployment.md` |
+| RV-DEC-P4-0002 | Embedding model: BAAI/bge-m3 (1024-dim, multilingual English, Indonesian, Javanese) | P4 | Approved | 2026-08-06 | `RekanVault_ADR_P4_0002_multilingual-embedding-model.md` |
+| RV-DEC-P4-0003 | Reranker: BAAI/bge-reranker-v2-m3 cross-encoder on top 20 candidates | P4 | Approved | 2026-08-06 | `RekanVault_ADR_P4_0003_cross-encoder-reranker.md` |
+| RV-DEC-P4-0004 | Chunk policy: Structure-first ~450 tokens with block locators (`doc_id#v<n>#chunk_<seq>`) | P4 | Approved | 2026-08-06 | `RekanVault_ADR_P4_0004_structure-first-chunking-policy.md` |
 
 ## How this index works
 
