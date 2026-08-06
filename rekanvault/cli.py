@@ -1,8 +1,11 @@
 import argparse
+import asyncio
 import json
 from pathlib import Path
 
+from apps.api.config import settings
 from rekanvault.contracts.export import export_all_schemas
+from rekanvault.storage.qdrant import QdrantStore
 
 
 def main() -> None:
@@ -26,6 +29,11 @@ def main() -> None:
     scan_parser.add_argument("--provider", type=str, choices=["google_drive", "notion"], required=True)
     scan_parser.add_argument("--source-id", type=str, required=True)
 
+    # qdrant
+    qdrant_parser = subparsers.add_parser("qdrant", help="Qdrant index operations")
+    qdrant_sub = qdrant_parser.add_subparsers(dest="qdrant_command", help="Qdrant subcommands")
+    qdrant_sub.add_parser("rebuild", help="Drop and recreate the Qdrant collection")
+
     args = parser.parse_args()
 
     if args.command == "version":
@@ -38,8 +46,19 @@ def main() -> None:
         print(f"Schema export complete: {outpath}")
     elif args.command == "scan":
         print(f"Scanning source '{args.source_id}' with provider '{args.provider}'...")
+    elif args.command == "qdrant" and args.qdrant_command == "rebuild":
+        asyncio.run(_qdrant_rebuild())
     else:
         parser.print_help()
+
+
+async def _qdrant_rebuild() -> None:
+    store = QdrantStore(settings)
+    collection = store.collection_name
+    print(f"Dropping collection {collection}...")
+    print("Recreating collection...")
+    await store.rebuild_from_postgres()
+    print("Rebuild complete.")
 
 
 if __name__ == "__main__":
