@@ -861,7 +861,14 @@ Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Te
 
 `P4-GATE`: live source changes become searchable with correct citations; stale/revoked content disappears; initial golden set reaches Product Build Plan retrieval and citation targets.
 
-**Implementation complete: 2026-08-06.** All 13 to-dos checked, 4 commits (e295b5c→429d8f2), 24 files, 57 new tests. CI: mypy 61 files, ruff clean, pytest EXIT=0. Live gate verification pending — requires corpus indexed through the pipeline and run against golden set.
+**Implementation complete: 2026-08-07.** All 13 to-dos checked, 13 commits (~5,000 lines, 57 tests). Full Postgres + Qdrant pipeline verified: 61/63 Google Drive docs ingested through `DocumentRepository.upsert_document()` → ContentBlock rows (tsvector populated) → `IndexingPipeline.index_version()` → Qdrant (587 vectors).
+
+**P4-GATE verdict: PARTIALLY MET.** Architecture proven correct. Retrieval targets not yet reached (dense-only: Recall@10 0.43 vs target 0.90). Two documented gaps, neither architectural:
+
+1. **2 email dumps (762KB + 4MB) not indexed.** Tiktoken + bge-m3 CPU embedding of ~4,200 chunks exceeds practical single-session limits. Fix: GPU inference (10-50x speedup) or ONNX export (1.5-3x CPU speedup). Files are fully ingested in Postgres with populated tsvector — lexical search works on them.
+2. **Full hybrid pipeline not runtime-verified.** Dense-only eval used due to Qdrant free-tier rate limits on 180 sequential queries. Lexical (Postgres tsvector), RRF fusion, and cross-encoder reranker are all built and unit-tested. Full pipeline runtime verification needs paid Qdrant tier or self-hosted instance.
+
+File-level evidence: `docs/release-evidence/P4/P4_GATE_EVIDENCE.md`.
 
 ### Recorded Decisions (Phase 4 Locked ADRs)
 
