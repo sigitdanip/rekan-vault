@@ -225,7 +225,11 @@ async def test_upsert_chunks_omits_missing_payload_keys() -> None:
 
     points = mock_client.upsert.await_args.kwargs["points"]
     assert len(points) == 1
-    assert points[0].payload == {"workspace_id": "ws_1", "chunk_text": "minimal"}
+    assert points[0].payload == {
+        "workspace_id": "ws_1",
+        "chunk_text": "minimal",
+        "chunk_locator": "doc_b#v1#chunk_0",
+    }
 
 
 @pytest.mark.asyncio
