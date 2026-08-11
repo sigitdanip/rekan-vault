@@ -34,7 +34,17 @@ router = APIRouter()
 
 # Hard-coded workspace_id is acceptable for the pilot — production gets
 # the real auth middleware (see P2-T6) that injects the caller identity.
-_PILOT_WORKSPACE_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+_PILOT_WORKSPACE_ID = uuid.UUID(settings.RV_PILOT_WORKSPACE_ID)
+
+# Module-level singletons — one QdrantStore and one EmbeddingService for
+# all requests instead of per-request instantiation (prevents model reload
+# and AsyncQdrantClient leak).
+_embed: EmbeddingService | None = None
+_qdrant: QdrantStore | None = None
+
+# Filter keys surfaced to Qdrant as keyword matches. Unknown keys are
+# rejected with 400 instead of forwarded to Qdrant (which would 500).
+ALLOWED_FILTER_KEYS: frozenset[str] = frozenset({"source_type", "corpus_id", "status"})
 
 
 class SearchRequest(BaseModel):
@@ -66,13 +76,26 @@ def _workspace_id() -> uuid.UUID:
     return _PILOT_WORKSPACE_ID
 
 
+def _get_embed() -> EmbeddingService:
+    global _embed
+    if _embed is None:
+        _embed = EmbeddingService()
+    return _embed
+
+
+def _get_qdrant() -> QdrantStore:
+    global _qdrant
+    if _qdrant is None:
+        _qdrant = QdrantStore(settings)
+    return _qdrant
+
+
 def _build_qdrant_filter(filters: dict[str, Any] | None) -> qmodels.Filter | None:
     """Translate the request's ``filters`` dict into a Qdrant filter.
 
-    Only keyword-equality keys are mapped. Unknown keys are silently
-    dropped — Qdrant will reject the request with a clear error if a
-    caller passes a key that isn't indexed, and we want the request to
-    fail loudly rather than masking a typo.
+    Rejects unknown keys with a 400 (instead of forwarding to Qdrant
+    where they produce a cryptic 500).  ``None`` values are silently
+    dropped — the caller passed the key but wants no constraint.
     """
     if not filters:
         return None
@@ -80,6 +103,13 @@ def _build_qdrant_filter(filters: dict[str, Any] | None) -> qmodels.Filter | Non
     for key, value in filters.items():
         if value is None:
             continue
+        if key not in ALLOWED_FILTER_KEYS:
+            raise RekanVaultError(
+                message=f"Unknown filter key: {key}",
+                code=ErrorCode.VALIDATION_ERROR,
+                target="filter",
+                details={"allowed": sorted(ALLOWED_FILTER_KEYS)},
+            )
         must.append(qmodels.FieldCondition(key=key, match=qmodels.MatchValue(value=value)))
     if not must:
         return None
@@ -107,9 +137,7 @@ async def search(
     started = time.perf_counter()
 
     try:
-        embed = EmbeddingService()
-        qdrant = QdrantStore(settings)
-        pipeline = RetrievalPipeline(session, embed, qdrant)
+        pipeline = RetrievalPipeline(session, _get_embed(), _get_qdrant())
         qdrant_filter = _build_qdrant_filter(body.filters)
         results = await pipeline.search(
             body.query,
@@ -147,4 +175,4 @@ async def search(
     return pack
 
 
-__all__ = ["SearchRequest", "SearchResponse", "router"]
+__all__ = ["ALLOWED_FILTER_KEYS", "SearchRequest", "SearchResponse", "router"]

@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     RV_GOOGLE_API_TIMEOUT_SECONDS: int = 30
     RV_GOOGLE_FOLDER_ID: str = ""
 
+    # Pilot workspace / source (hardcoded until auth middleware — P2-T6).
+    # Set these in .env for your corpus; defaults are the pilot UUIDs.
+    RV_PILOT_WORKSPACE_ID: str = "00000000-0000-0000-0000-000000000001"
+    RV_PILOT_SOURCE_ID: str = "8a3d2f1e-0000-4000-8000-000000000001"
+    RV_PILOT_NOTION_SOURCE_ID: str = "8a3d2f1e-0000-4000-8000-000000000002"
+
     # Phase 3: Notion Internal Integration (RV-DEC-P3-0002)
     RV_NOTION_API_VERSION: str = "2026-03-11"
     RV_NOTION_TOKEN: str = ""
@@ -74,9 +80,13 @@ class Settings(BaseSettings):
 
     # Phase 4: Cross-Encoder Reranker (RV-DEC-P4-0003)
     RV_RERANK_PROVIDER: str = "local_cross_encoder"
-    RV_RERANK_MODEL: str = "BAAI/bge-reranker-v2-m3"
+    RV_RERANK_MODEL: str = "jinaai/jina-reranker-v2-base-multilingual"
     RV_RERANK_MODEL_REVISION: str = ""
     RV_RERANK_TOP_N: int = 20
+
+    # Phase 4: Query-to-filter inference — fragments that, when found in
+    # a query, trigger a doc_title text filter.  Set per-corpus.
+    RV_TITLE_FILTER_FRAGMENTS: str = ""
 
 
 settings = Settings()

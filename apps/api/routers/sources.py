@@ -18,6 +18,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.api.config import settings
 from rekanvault.contracts.errors import NotFoundError
 from rekanvault.contracts.sources import (
     JobTriggerResponse,
@@ -35,9 +36,7 @@ from rekanvault.storage.source_repo import SourceRepository
 
 router = APIRouter()
 
-# Hard-coded workspace_id is acceptable for the pilot — production gets
-# the real auth middleware (see P2-T6) that injects the caller identity.
-_PILOT_WORKSPACE_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+_PILOT_WORKSPACE_ID = uuid.UUID(settings.RV_PILOT_WORKSPACE_ID)
 
 
 def _workspace_id() -> uuid.UUID:

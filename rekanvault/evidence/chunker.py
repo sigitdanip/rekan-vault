@@ -149,7 +149,7 @@ def _maybe_split_oversized(blocks: list[ContentBlock]) -> list[ContentBlock]:
                     id=uuid.uuid4(),
                     document_version_id=b.document_version_id,
                     workspace_id=b.workspace_id,
-                    block_index=b.block_index,
+                    block_index=b.block_index * 10_000 + seg,  # ponytail: sub-index avoids clashing with parent
                     block_type=b.block_type,
                     content_text=segment_text,
                     metadata_=dict(b.metadata_ or {}),

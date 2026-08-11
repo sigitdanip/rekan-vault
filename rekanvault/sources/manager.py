@@ -26,6 +26,7 @@ from rekanvault.sources.base import BaseConnector
 from rekanvault.sources.google_drive import GoogleDriveConnector
 from rekanvault.sources.notion import NotionConnector
 from rekanvault.storage.document_repo import DocumentRepository
+from rekanvault.storage.jobs import JobQueueManager
 from rekanvault.storage.models import Document, Source
 from rekanvault.storage.source_repo import SourceRepository
 
@@ -209,9 +210,34 @@ class SourceManager:
                 cursor_value=new_cursor,
             )
 
+        # Process deletion events from the change feed so removed
+        # documents don't stay searchable forever.
+        events: list[dict[str, Any]] = result.get("events", [])
+        deactivated_count = 0
+        for event in events:
+            if event.get("type") not in ("deleted", "trashed"):
+                continue
+            native_id = str(event.get("file_id", ""))
+            if not native_id:
+                continue
+            doc = await self._documents.get_by_external_id(
+                session=session,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                external_id=native_id,
+            )
+            if doc is not None and doc.status != "deactivated":
+                await JobQueueManager(session).enqueue_job(
+                    workspace_id=workspace_id,
+                    job_type="deactivate_document",
+                    payload={"document_id": str(doc.id)},
+                )
+                deactivated_count += 1
+
         stats = {
             "changes": int(result.get("changes_count", 0)),
             "new_cursor_set": bool(new_cursor),
+            "deactivated": deactivated_count,
         }
         await self._sources.complete_sync_job(
             session=session,

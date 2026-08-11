@@ -40,13 +40,13 @@ class DocumentVersion(BaseModel):
 
 
 class NormalizedDocument(BaseModel):
-    document_id: str
-    workspace_id: str
-    source_id: str
-    title: str
+    document_id: str = Field(..., min_length=1)
+    workspace_id: str = Field(..., min_length=1)
+    source_id: str = Field(..., min_length=1)
+    title: str = Field(..., min_length=1)
     provider: SourceProvider
     locator: DocumentLocator
-    active_version_id: str
+    active_version_id: str = Field(..., min_length=1)
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     versions: list[DocumentVersion] = Field(default_factory=list)

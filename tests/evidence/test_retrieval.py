@@ -86,6 +86,7 @@ def _lexical_row(
         "version_id": version_id or str(uuid.uuid4()),
         "document_id": document_id or str(uuid.uuid4()),
         "external_id": "ext-1",
+        "doc_title": "Test Document",
         "rank": rank,
     }
 
@@ -257,8 +258,8 @@ def test_rrf_fusion() -> None:
             "source": "lexical",
             "document_id": "d",
             "version_id": "v",
-            "block_start": 0,
-            "block_end": 0,
+            "block_start": 20,
+            "block_end": 20,
             "metadata": {},
         },
         {
@@ -266,7 +267,7 @@ def test_rrf_fusion() -> None:
             "score": 0.4,
             "content": "c",
             "source": "lexical",
-            "document_id": "d",
+            "document_id": "c_doc",
             "version_id": "v",
             "block_start": 0,
             "block_end": 0,
@@ -292,8 +293,8 @@ def test_rrf_fusion() -> None:
             "source": "dense",
             "document_id": "d",
             "version_id": "v",
-            "block_start": 0,
-            "block_end": 0,
+            "block_start": 20,
+            "block_end": 20,
             "metadata": {},
         },
         {
@@ -301,17 +302,17 @@ def test_rrf_fusion() -> None:
             "score": 0.5,
             "content": "d",
             "source": "dense",
-            "document_id": "d",
+            "document_id": "d_doc",
             "version_id": "v",
             "block_start": 0,
             "block_end": 0,
             "metadata": {},
         },
     ]
-    # Item "A" is 1st in both lists (highest combined RRF).
-    # Item "B" is 2nd in both lists.
-    # Item "C" is 3rd in lexical only.
-    # Item "D" is 3rd in dense only.
+    # Item "A" is 1st in both lists (highest combined RRF, source="both").
+    # Item "B" is 2nd in both lists (different block, so separate key).
+    # Item "C" is 3rd in lexical only (different doc).
+    # Item "D" is 3rd in dense only (different doc).
 
     fused = RetrievalPipeline._rrf_fuse(lex, dense, limit=10)
     by_id = {h["chunk_id"]: h for h in fused}
@@ -319,23 +320,27 @@ def test_rrf_fusion() -> None:
     # All four items surface.
     assert set(by_id) == {"A", "B", "C", "D"}
 
+    # A has combined score = 1/61 (lex rank 1) + 1/61 (dense rank 1) = 2/61.
+    expected_a = 2.0 / (60 + 1)
+    assert by_id["A"]["score"] == pytest.approx(expected_a)
+
+    # B has = 1/62 (lex rank 2) + 1/62 (dense rank 2).
+    expected_b = 2.0 / (60 + 2)
+    assert by_id["B"]["score"] == pytest.approx(expected_b)
+
     # A > B (A is ranked 1st in both; B is 2nd in both).
     assert by_id["A"]["score"] > by_id["B"]["score"]
-    # A > C (A is 1st+1st, C is 3rd in lexical only).
+    # A > C (A has two legs, C has only lexical).
     assert by_id["A"]["score"] > by_id["C"]["score"]
-    # B > C and B > D (B is in both lists; C/D are in one only).
+    # B > C (B has two legs, C has only lexical).
     assert by_id["B"]["score"] > by_id["C"]["score"]
-    assert by_id["B"]["score"] > by_id["D"]["score"]
 
     # A is "both" since it appeared in both legs.
     assert by_id["A"]["source"] == "both"
+    assert by_id["B"]["source"] == "both"
     # C/D are single-leg.
     assert by_id["C"]["source"] == "lexical"
     assert by_id["D"]["source"] == "dense"
-
-    # Sanity: hand-computed RRF score for A is 2 * 1/(60+1).
-    expected_a = 2.0 / (60 + 1)
-    assert by_id["A"]["score"] == pytest.approx(expected_a)
 
 
 def test_rrf_fusion_first_in_one_fifth_in_other() -> None:
@@ -357,7 +362,7 @@ def test_rrf_fusion_first_in_one_fifth_in_other() -> None:
         "score": 0.0,
         "content": "y",
         "source": "lexical",
-        "document_id": "d",
+        "document_id": "d2",
         "version_id": "v",
         "block_start": 0,
         "block_end": 0,
@@ -448,7 +453,7 @@ async def test_rerank_integration() -> None:
     args = rerank_mock.call_args.args
     assert args[0] == "query"
     assert args[1] == ["first", "second", "third"]
-    assert rerank_mock.call_args.kwargs["top_n"] == 2
+    assert rerank_mock.call_args.kwargs["top_n"] == 3  # max(top_k, min(top_k*3, len)) = max(2, min(6,3)) = 3
 
     assert [c["chunk_id"] for c in out] == ["c", "b"]
     assert out[0]["score"] == 0.9
@@ -548,8 +553,8 @@ async def test_search_orchestration() -> None:
         version_id=version_id,
         workspace_id=str(workspace_id),
         chunk_text="dense hit",
-        block_start=5,
-        block_end=6,
+            block_start=25,
+            block_end=26,
     )
     response = MagicMock()
     response.points = [point]
@@ -572,11 +577,13 @@ async def test_search_orchestration() -> None:
             "chunk_id",
             "document_id",
             "version_id",
+            "workspace_id",
             "content",
             "score",
             "source",
             "block_start",
             "block_end",
+            "token_count",
             "metadata",
         }
         for r in results

@@ -160,6 +160,10 @@ async def test_upsert_chunks_stages_point_structs_with_dense_vector() -> None:
             "created_at": "2026-08-06T00:00:00Z",
             "corpus_id": "corpus_pilot",
             "chunk_text": "hello world",
+            "external_id": "ext_a",
+            "block_start": 0,
+            "block_end": 1,
+            "token_count": 10,
             "extra_field_dropped": "should not be stored",
         },
         {
@@ -175,6 +179,10 @@ async def test_upsert_chunks_stages_point_structs_with_dense_vector() -> None:
             "created_at": "2026-08-06T00:00:00Z",
             "corpus_id": "corpus_pilot",
             "chunk_text": "second chunk",
+            "external_id": "ext_a",
+            "block_start": 2,
+            "block_end": 3,
+            "token_count": 5,
         },
     ]
 
@@ -323,4 +331,5 @@ def test_payload_indexes_match_p4_t3_filter_fields() -> None:
         ("status", models.PayloadSchemaType.KEYWORD),
         ("created_at", models.PayloadSchemaType.DATETIME),
         ("corpus_id", models.PayloadSchemaType.KEYWORD),
+        ("doc_title", models.PayloadSchemaType.TEXT),
     )

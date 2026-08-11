@@ -26,6 +26,7 @@ def get_async_engine(db_url: str | None = None) -> AsyncEngine:
         max_overflow=settings.RV_DATABASE_POOL_MAX_SIZE - settings.RV_DATABASE_POOL_MIN_SIZE,
         echo=settings.RV_ENV == "development",
         future=True,
+        connect_args={"prepare_threshold": None},
     )
 
 

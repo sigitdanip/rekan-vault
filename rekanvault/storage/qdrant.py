@@ -44,6 +44,7 @@ PAYLOAD_INDEXES: tuple[tuple[str, models.PayloadSchemaType], ...] = (
     ("status", models.PayloadSchemaType.KEYWORD),
     ("created_at", models.PayloadSchemaType.DATETIME),
     ("corpus_id", models.PayloadSchemaType.KEYWORD),
+    ("doc_title", models.PayloadSchemaType.TEXT),
 )
 
 # Display payload keys copied verbatim from each chunk dict on upsert.
@@ -60,6 +61,10 @@ PAYLOAD_KEYS: tuple[str, ...] = (
     "created_at",
     "corpus_id",
     "chunk_text",
+    "external_id",
+    "block_start",
+    "block_end",
+    "token_count",
 )
 
 DenseVectorName = "dense"

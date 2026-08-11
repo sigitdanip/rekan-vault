@@ -115,18 +115,19 @@ async def test_index_version_chunks_and_embeds() -> None:
     assert len(points) == 3
     expected_vectors = [[0.1] * 4, [0.2] * 4, [0.3] * 4]
     for idx, point in enumerate(points, start=1):
-        assert point["id"] == f"doc-1#v1#chunk_{idx:03d}"
-        assert point["vector"] == {"dense": expected_vectors[idx - 1]}
-        payload = point["payload"]
-        assert payload["workspace_id"] == str(version.workspace_id)
-        assert payload["document_id"] == str(version.document.id)
-        assert payload["version_id"] == str(version.id)
-        assert payload["source_type"] == "google_drive"
-        assert payload["status"] == "active"
-        assert payload["corpus_id"] == str(version.document.corpus_id)
-        assert payload["block_start"] == 0
-        assert payload["block_end"] == 0
-        assert "created_at" in payload
+        assert point["chunk_id"] == f"doc-1#v1#chunk_{idx:03d}"
+        assert point["embedding"] == expected_vectors[idx - 1]
+        assert point["workspace_id"] == str(version.workspace_id)
+        assert point["document_id"] == str(version.document.id)
+        assert point["version_id"] == str(version.id)
+        assert point["source_type"] == "google_drive"
+        assert point["status"] == "active"
+        assert point["corpus_id"] == str(version.document.corpus_id)
+        assert point["block_start"] == 0
+        assert point["block_end"] == 0
+        assert point["token_count"] == 1
+        assert "created_at" in point
+        assert "block_type" in point
 
 
 @pytest.mark.asyncio
@@ -144,13 +145,13 @@ async def test_index_version_empty_chunks() -> None:
 
 
 @pytest.mark.asyncio
-async def test_index_version_missing_version_returns_zero() -> None:
+async def test_index_version_missing_version_raises() -> None:
     pipeline, mocks = _make_pipeline()
     mocks["doc_repo"].get_version.return_value = None
 
-    count = await pipeline.index_version(uuid.uuid4())
+    with pytest.raises(ValueError, match="not found"):
+        await pipeline.index_version(uuid.uuid4())
 
-    assert count == 0
     mocks["chunker"].chunk_version.assert_not_called()
     mocks["qdrant"].upsert_chunks.assert_not_called()
 
@@ -168,7 +169,7 @@ async def test_index_version_truncates_chunk_text() -> None:
     await pipeline.index_version(version.id)
 
     points = mocks["qdrant"].upsert_chunks.call_args[0][0]
-    assert len(points[0]["payload"]["chunk_text"]) == CHUNK_TEXT_PAYLOAD_MAX_CHARS
+    assert len(points[0]["chunk_text"]) == CHUNK_TEXT_PAYLOAD_MAX_CHARS
 
 
 @pytest.mark.asyncio

@@ -21,6 +21,7 @@ without spinning up Postgres or Qdrant.
 
 from __future__ import annotations
 
+import re
 import uuid
 from collections import defaultdict
 from typing import Any
@@ -39,9 +40,9 @@ RRF_K: int = 60  # standard RRF smoothing constant; tune per golden-set eval
 
 # Lexical / dense recall fan-out. We over-fetch so the reranker has head
 # room and dedup has something to remove.
-LEXICAL_FANOUT_MULTIPLIER: int = 20  # ponytail: widened for MULTIHOP diversity (needs multiple docs in pool)
-DENSE_FANOUT_MULTIPLIER: int = 20  # ponytail: same
-RRF_FANOUT_MULTIPLIER: int = 6  # RRF output goes to the reranker
+LEXICAL_FANOUT_MULTIPLIER: int = 30  # ponytail: wide for MULTIHOP second-target rescue
+DENSE_FANOUT_MULTIPLIER: int = 30
+RRF_FANOUT_MULTIPLIER: int = 15  # 150 fused candidates → cross-encoder sees top 50
 
 TITLE_BOOST_WEIGHT: float = 4.0  # weight multiplier for doc_title ts_rank in lexical SQL
 
@@ -190,6 +191,25 @@ class RetrievalPipeline:
         # ponytail: strip double-quotes so websearch_to_tsquery never
         # chokes on unbalanced phrase delimiters (PG syntax error → 500).
         safe_query = query.replace('"', '').replace("'", "")
+        # Ponytail: slash-split so "Raja/Kaisar" becomes "Raja Kaisar"
+        # — 'simple' parser treats '/' as a word character, turning
+        # slash-joined terms into single tokens that never match split
+        # occurrences in body text.
+        safe_query = safe_query.replace('/', ' ')
+        # Ponytail: drop Indonesian function/stop words that appear in
+        # natural-language questions but rarely in document body text.
+        # Without this, websearch_to_tsquery's AND semantics require
+        # *every* word to match — a single missing "menjabat" kills the
+        # entire lexical leg for MULTIHOP queries.
+        for w in ("siapa", "yang", "menjabat", "di", "dari", "dengan",
+                   "sebagai", "sekaligus", "dan", "atau", "itu", "ini",
+                   "apa", "bagaimana", "kapan", "dimana", "untuk",
+                   "the", "is", "are", "was", "were", "which", "where",
+                   "what", "who", "how", "when", "does", "a", "an"):
+            safe_query = re.sub(r'\b' + w + r'\b', '', safe_query, flags=re.IGNORECASE)
+        safe_query = ' '.join(safe_query.split())  # collapse whitespace
+        if not safe_query.strip():
+            return []
         try:
             result = await self._session.execute(
                 _LEXICAL_SQL,
@@ -295,20 +315,26 @@ class RetrievalPipeline:
         ``score = sum_i 1 / (k + rank_i)`` where ``rank_i`` is 1-based and
         items missing from list ``i`` contribute 0. ``source`` is upgraded
         to ``both`` when an item appears in both lists.
+
+        Keys on ``(document_id, block_window)`` instead of ``chunk_id``
+        because lexical uses ContentBlock UUIDs and dense uses locator
+        strings — two disjoint namespaces that can never collide.
+        A block_window groups chunks covering the same ~10-block region
+        so lexical and dense hits on the same document region fuse.
         """
-        scores: dict[str, float] = defaultdict(float)
-        seen_lex: dict[str, dict[str, Any]] = {}
-        seen_dense: dict[str, dict[str, Any]] = {}
+        scores: dict[tuple[str, int], float] = defaultdict(float)
+        seen_lex: dict[tuple[str, int], dict[str, Any]] = {}
+        seen_dense: dict[tuple[str, int], dict[str, Any]] = {}
 
         for rank, hit in enumerate(lexical, start=1):
-            cid = hit["chunk_id"]
-            scores[cid] += 1.0 / (k + rank)
-            seen_lex[cid] = hit
+            key = _rrf_key(hit)
+            scores[key] += 1.0 / (k + rank)
+            seen_lex.setdefault(key, hit)
 
         for rank, hit in enumerate(dense, start=1):
-            cid = hit["chunk_id"]
-            scores[cid] += 1.0 / (k + rank)
-            seen_dense[cid] = hit
+            key = _rrf_key(hit)
+            scores[key] += 1.0 / (k + rank)
+            seen_dense.setdefault(key, hit)
 
         # Build the merged records, picking the lexical hit as the base
         # when present (richer block metadata) and folding in dense-only
@@ -353,7 +379,7 @@ class RetrievalPipeline:
         # Fetch more candidates than top_k so exact-title-matching docs
         # that the cross-encoder ranks below metadata-spam files can be
         # boosted back into the final top-k after _apply_title_boost.
-        rerank_n = max(top_k, min(top_k * 3, len(candidates)))
+        rerank_n = max(top_k, min(top_k * 5, len(candidates)))
         ranked = self._embed.rerank(query, texts, top_n=rerank_n)
         # ``ranked`` is a list of ``(original_index, score)`` in score
         # order. We project that back onto the original candidate dicts.
@@ -390,23 +416,17 @@ class RetrievalPipeline:
         *,
         rescue_pool: list[dict[str, Any]] | None = None,
     ) -> list[dict[str, Any]]:
-        """Normalize scores to [0, 1] via min-max, drop sort, return only
-        the public-shape fields the caller asked for. Empty input → []."""
+        """Normalize scores to [0, 1] via min-max, apply diversity cap,
+        rescue under-represented docs from the pre-rerank pool, then
+        return the public-shape fields.  Empty input → [].
+
+        Diversity rescue runs BEFORE min-max normalization so rescued
+        items land on the same score scale as cross-encoder candidates.
+        """
         if not candidates:
             return []
-        scores = [float(c["score"]) for c in candidates]
-        lo, hi = min(scores), max(scores)
-        spread = hi - lo
-        for cand in candidates:
-            if spread > 0:
-                cand["score"] = (float(cand["score"]) - lo) / spread
-            else:
-                # All scores identical → 1.0 keeps the ordering intact
-                # without inventing a non-existent spread.
-                cand["score"] = 1.0
-        candidates.sort(key=lambda c: c["score"], reverse=True)
-        # ponytail: diversity cap — max 5 chunks per document so
-        # SYNTHESIS/MULTIHOP queries surface evidence from 2+ docs.
+        # Cap at 5 per doc before rescuing — don't flood the pool with
+        # single-doc chunks that would hide the true diversity problem.
         capped: list[dict[str, Any]] = []
         seen_per_doc: dict[str, int] = {}
         for c in candidates:
@@ -416,23 +436,32 @@ class RetrievalPipeline:
                 capped.append(c)
                 seen_per_doc[doc_id] = n + 1
 
-        # Diversity floor: when the top results are from a single document
-        # (common in MULTIHOP queries where the cross-encoder heavily
-        # favors one target), this boosts under-represented docs from the
-        # full pool.  Only triggers when top-10 has < 2 unique docs —
-        # invisible for normal queries (EXACT always has spam docs too).
-        top10_unique = len({str(c["document_id"]) for c in capped[:10]})
-        if top10_unique < 2 and len(capped) >= 10:
-            top10_docs = {str(c["document_id"]) for c in capped[:10]}
-            pool = rescue_pool or candidates
-            for c in pool:
-                doc_id = str(c["document_id"])
-                if doc_id not in top10_docs and seen_per_doc.get(doc_id, 0) < 5:
-                    capped.append(c)
-                    seen_per_doc[doc_id] = seen_per_doc.get(doc_id, 0) + 1
-                    top10_docs.add(doc_id)
-                    if len(top10_docs) >= 2:
-                        break
+        # Diversity floor — rescue under-represented docs BEFORE
+        # normalization so they share the same score scale.
+        if rescue_pool is not None:
+            top10_unique = len({str(c["document_id"]) for c in capped[:10]})
+            if top10_unique < 2 and len(capped) >= 10:
+                top10_docs = {str(c["document_id"]) for c in capped[:10]}
+                for c in rescue_pool:
+                    doc_id = str(c["document_id"])
+                    if doc_id not in top10_docs and seen_per_doc.get(doc_id, 0) < 5:
+                        capped.append(c)
+                        seen_per_doc[doc_id] = seen_per_doc.get(doc_id, 0) + 1
+                        top10_docs.add(doc_id)
+                        if len(top10_docs) >= 2:
+                            break
+
+        # NOW normalize — rescued items get normalized with the rest
+        # and won't sink to the bottom.
+        scores = [float(c["score"]) for c in capped]
+        lo, hi = min(scores), max(scores)
+        spread = hi - lo
+        for cand in capped:
+            if spread > 0:
+                cand["score"] = (float(cand["score"]) - lo) / spread
+            else:
+                cand["score"] = 1.0
+        capped.sort(key=lambda c: c["score"], reverse=True)
         return [
             {
                 "chunk_id": c["chunk_id"],
@@ -504,6 +533,20 @@ class RetrievalPipeline:
             should=filters.should,
             must_not=filters.must_not,
         )
+
+
+def _rrf_key(hit: dict[str, Any]) -> tuple[str, int]:
+    """Return a stable ``(document_id, block_window)`` key for RRF fusion.
+
+    Lexical hits carry ``block_index`` (a single block number); dense hits
+    carry ``block_start`` / ``block_end``.  Both map to the same 10-block
+    window so overlapping content regions fuse.
+    """
+    doc = str(hit.get("document_id", ""))
+    bs = int(hit.get("block_start") or hit.get("block_index") or 0)
+    be = int(hit.get("block_end") or bs)
+    mid = (bs + be) // 2
+    return (doc, mid // 10)
 
 
 def _overlaps(a_start: int, a_end: int, b_start: int, b_end: int) -> bool:
