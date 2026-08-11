@@ -43,9 +43,15 @@ def _flatten_blocks(normalized: NormalizedDocument) -> list[Block]:
 
 def _fingerprint_for(normalized: NormalizedDocument) -> str:
     """Stable identity hash (title + locator + block shape) — used to skip
-    writes when nothing material changed."""
-    block_sig = "|".join(f"{b.block_id}:{b.block_type}:{len(b.content)}" for b in _flatten_blocks(normalized))
-    payload = f"{normalized.active_version_id}|{normalized.title}|{normalized.locator.native_id}|{block_sig}"
+    writes when nothing material changed.
+
+    Deliberately excludes ``block_id`` and ``active_version_id`` so the
+    fingerprint is stable across re-scans of unchanged content.  Only
+    structural changes (block types, counts, sizes) and title changes
+    trigger a new version.
+    """
+    block_sig = "|".join(f"{b.block_type}:{len(b.content)}" for b in _flatten_blocks(normalized))
+    payload = f"{normalized.title}|{normalized.locator.native_id}|{block_sig}"
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -91,13 +97,22 @@ class DocumentRepository:
         No row → create Document + DocumentVersion + ContentBlocks.
         Row + unchanged fingerprint → return existing (skip write).
         Row + changed fingerprint → bump version, write new version + blocks.
+
+        Lock the document row with ``FOR UPDATE`` so concurrent syncs
+        for the same document serialize their ``_latest_version`` reads
+        (P6 dedup fix).
         """
-        existing = await self.get_by_external_id(
-            session=session,
-            workspace_id=workspace_id,
-            source_id=source_id,
-            external_id=normalized.locator.native_id,
+        stmt = (
+            select(Document)
+            .where(
+                Document.workspace_id == workspace_id,
+                Document.source_id == source_id,
+                Document.external_id == normalized.locator.native_id,
+            )
+            .with_for_update()
         )
+        result = await session.execute(stmt)
+        existing = result.scalar_one_or_none()
 
         blocks = _flatten_blocks(normalized)
         fingerprint = _fingerprint_for(normalized)
@@ -276,6 +291,21 @@ class DocumentRepository:
             .order_by(DocumentVersion.version_number.desc())
             .limit(1)
         )
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def lock_document(
+        self,
+        session: AsyncSession,
+        document_id: uuid.UUID,
+    ) -> Document | None:
+        """Acquire a row-level write lock on a document.
+
+        Used by ``handle_document_change`` and ``_handle_deactivate_document``
+        to serialize concurrent index / deactivate operations on the same
+        document — prevents P4 stale-index and duplicate-vector races.
+        """
+        stmt = select(Document).where(Document.id == document_id).with_for_update()
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 

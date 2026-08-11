@@ -87,6 +87,16 @@ _CHANGE_FIELDS = (
 # Doc API fields — body + tabs (RV-DEC-P3-0005).
 _DOC_FIELDS = "tabs(tabId,title,body(content)),body(content)"
 
+# ponytail: email dumps are low signal-to-noise (headers, sigs, quoted replies).
+# Detect by filename pattern before download — avoids CPU cost of indexing noise.
+_EMAIL_DUMP_PATTERNS = (
+    "mail", "inbox", "sent items", "archive", "mbox", ".eml",
+    "takeout", "gmail", "outlook",
+)
+
+def _is_email_dump(name: str) -> bool:
+    return any(p in name for p in _EMAIL_DUMP_PATTERNS)
+
 
 # --- errors ----------------------------------------------------------------
 
@@ -434,6 +444,7 @@ class GoogleDriveConnector(BaseConnector):
 
         folders_to_walk: list[dict[str, Any]] = [{"id": self._folder_id, "name": "root", "path": ""}]
         seen_folder_ids: set[str] = set()
+        seen_file_ids: set[str] = set()
         all_files: list[dict[str, Any]] = []
         warnings: list[ExtractionWarning] = []
 
@@ -459,12 +470,29 @@ class GoogleDriveConnector(BaseConnector):
 
         documents: list[NormalizedDocument] = []
         for file_meta in all_files:
+            file_id = file_meta.get("id", "")
+            if file_id in seen_file_ids:
+                continue  # ponytail: file lives in multiple folders — dedup by id
+            seen_file_ids.add(file_id)
+
             mime = file_meta.get("mimeType", "")
             if mime not in SUPPORTED_MIME_TYPES:
                 warnings.append(
                     ExtractionWarning(
                         code="UNSUPPORTED_MIME_TYPE",
                         message=f"Skipping '{file_meta.get('name')}' ({mime})",
+                        document_external_id=file_meta["id"],
+                    )
+                )
+                continue
+
+            # ponytail: email dumps are low signal-to-noise; skip
+            name = (file_meta.get("name") or "").lower()
+            if _is_email_dump(name):
+                warnings.append(
+                    ExtractionWarning(
+                        code="EMAIL_DUMP_SKIPPED",
+                        message=f"Skipping email dump '{file_meta.get('name')}'",
                         document_external_id=file_meta["id"],
                     )
                 )

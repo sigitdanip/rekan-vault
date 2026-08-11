@@ -23,12 +23,13 @@ import signal
 import uuid
 from typing import Any, Awaitable, Callable
 
+import rekanvault.storage.database as _db_module
 from apps.api.config import settings
 from rekanvault.evidence.chunker import Chunker
 from rekanvault.evidence.embedding import EmbeddingService
 from rekanvault.evidence.indexing import IndexingPipeline
 from rekanvault.sources.manager import SourceManager
-from rekanvault.storage.database import _async_session_factory, init_db
+from rekanvault.storage.database import init_db
 from rekanvault.storage.document_repo import DocumentRepository
 from rekanvault.storage.jobs import JobQueueManager
 from rekanvault.storage.qdrant import QdrantStore
@@ -38,7 +39,13 @@ from rekanvault.storage.qdrant import QdrantStore
 # at max_attempts via JobQueueManager.fail_job).
 JobHandler = Callable[[Any, dict[str, Any]], Awaitable[None]]
 
-_PILOT_WORKSPACE_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+_PILOT_WORKSPACE_ID = uuid.UUID(settings.RV_PILOT_WORKSPACE_ID)
+
+# Module-level singletons — one instance per worker process lifetime.
+# Callers (handlers, boot sequence) share these instead of re-creating
+# per job, avoiding model-reload thrash and AsyncQdrantClient leaks.
+_embed: EmbeddingService | None = None
+_qdrant: QdrantStore | None = None
 
 
 async def _handle_sync_source(session: Any, payload: dict[str, Any]) -> None:
@@ -70,23 +77,39 @@ def _build_pipeline(session: Any) -> IndexingPipeline:
     """Construct an IndexingPipeline with shared collaborators.
 
     Single source of truth for the DI graph used by both index and
-    deactivate handlers. ponytail: caller ensures the Qdrant collection
-    exists before the first index job.
+    deactivate handlers.  EmbeddingService and QdrantStore are
+    module-level singletons — created once on first use, closed
+    on worker shutdown.
     """
     doc_repo = DocumentRepository()
     return IndexingPipeline(
         session=session,
         chunker=Chunker(repo=doc_repo),
-        embed=EmbeddingService(),
-        qdrant=QdrantStore(settings),
+        embed=_get_embed(),
+        qdrant=_get_qdrant(),
         doc_repo=doc_repo,
     )
 
 
+def _get_embed() -> EmbeddingService:
+    global _embed
+    if _embed is None:
+        _embed = EmbeddingService()
+    return _embed
+
+
+def _get_qdrant() -> QdrantStore:
+    global _qdrant
+    if _qdrant is None:
+        _qdrant = QdrantStore(settings)
+    return _qdrant
+
+
 async def _handle_index_document_version(session: Any, payload: dict[str, Any]) -> None:
     pipeline = _build_pipeline(session)
+    document_id = uuid.UUID(str(payload["document_id"]))
     document_version_id = uuid.UUID(str(payload["document_version_id"]))
-    await pipeline.index_version(document_version_id)
+    await pipeline.handle_document_change(document_id, document_version_id)
 
 
 async def _handle_deactivate_document(session: Any, payload: dict[str, Any]) -> None:
@@ -94,10 +117,12 @@ async def _handle_deactivate_document(session: Any, payload: dict[str, Any]) -> 
 
     Payload carries ``document_id``; the latest version's chunks are
     removed from Qdrant, then the row status flips to ``deactivated``.
+    Locks the document row so concurrent index jobs serialize (P4 dedup fix).
     """
     pipeline = _build_pipeline(session)
     document_id = uuid.UUID(str(payload["document_id"]))
     doc_repo = DocumentRepository()
+    await doc_repo.lock_document(session, document_id)
     latest = await doc_repo.get_latest_version(session, document_id)
     if latest is not None:
         await pipeline.deactivate_version(latest.id)
@@ -150,22 +175,23 @@ class WorkerDaemon:
 
         # Best-effort DB init — if no DB is reachable the worker sleeps
         # rather than crashing, which is what the smoke tests rely on.
-        if _async_session_factory is None:
+        if _db_module._async_session_factory is None:
             try:
                 init_db()
             except Exception as exc:  # noqa: BLE001 — startup is best-effort
-                print(f"[Worker {self.worker_id}] DB init skipped: {exc}")
+                print(f"[Worker {self.worker_id}] WARNING: DB init failed: {exc}")
+                print(f"[Worker {self.worker_id}]   The worker will poll indefinitely. All job claims/commits will fail.")
 
-        # Best-effort Qdrant collection init. ``ensure_collection`` is
-        # idempotent, so re-running on every boot is safe. Skipped if
-        # Qdrant is unreachable — the first index job will then fail
-        # loudly and the worker keeps polling.
+        # Best-effort Qdrant collection init. Uses the module-level
+        # singleton so ensure_collection and subsequent index jobs
+        # share the same client.
         try:
-            qdrant = QdrantStore(settings)
+            qdrant = _get_qdrant()
             await qdrant.ensure_collection()
-            await qdrant.close()
         except Exception as exc:  # noqa: BLE001 — startup is best-effort
-            print(f"[Worker {self.worker_id}] Qdrant init skipped: {exc}")
+            print(f"[Worker {self.worker_id}] WARNING: Qdrant collection init failed: {exc}")
+            print(f"[Worker {self.worker_id}]   Index jobs will fail until the collection exists.")
+            print(f"[Worker {self.worker_id}]   Run 'rekanvault qdrant rebuild' to create it.")
 
         await self._dispatch_loop()
 
@@ -175,12 +201,16 @@ class WorkerDaemon:
             except (asyncio.TimeoutError, asyncio.CancelledError):
                 self._inflight.cancel()
 
+        # Close module-level singletons so resources are freed cleanly.
+        if _qdrant is not None:
+            await _qdrant.close()
+
         print(f"[Worker {self.worker_id}] Graceful shutdown complete. Exiting clean.")
 
     async def _dispatch_loop(self) -> None:
         """Claim-and-dispatch loop. Exits when ``running`` flips to False."""
         assert self._stop_event is not None
-        factory = _async_session_factory
+        factory = _db_module._async_session_factory
         while self.running:
             if factory is None:
                 try:

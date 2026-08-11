@@ -447,6 +447,7 @@ Required transitions:
 - Trash, delete, or access revocation blocks new retrieval immediately.
 - Provider events may be duplicated, delayed, or out of order without corrupting final state.
 - Reprocessing is idempotent.
+- **Dedup hardening (2026-08-11)**: Fingerprints now stable (hash title + native_id + block shape — no volatile IDs). Google Drive scan deduplicates multi-folder files. Notion parent-child content no longer flattened into both documents. Per-document `FOR UPDATE` serializes index/deactivate. Lexical search filters to latest version only. Concurrent upsert serialized with row-level lock.
 - Scheduled reconciliation repairs missed provider events.
 - Workers resume from durable checkpoints.
 

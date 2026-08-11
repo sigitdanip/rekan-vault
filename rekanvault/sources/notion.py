@@ -354,6 +354,11 @@ class NotionConnector(BaseConnector):
             )
 
             if child.get("has_children"):
+                # ponytail: child_page and child_database are separate documents
+                # handled by _collect_page / _collect_database_rows — do NOT
+                # flatten their content into the parent (P3 dedup fix).
+                if block_type in ("child_page", "child_database"):
+                    continue
                 nested = await self._walk_block_children(child["id"], depth=depth + 1)
                 for nb in nested:
                     sequence += 1

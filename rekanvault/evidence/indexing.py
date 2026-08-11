@@ -32,7 +32,7 @@ from rekanvault.storage.qdrant import QdrantStore
 # Chunk-text display budget kept inline so the pipeline stays
 # self-contained. Qdrant payload is fine with more, but the retrieval
 # display layer truncates to 1k anyway — match the downstream ceiling.
-CHUNK_TEXT_PAYLOAD_MAX_CHARS = 1000
+CHUNK_TEXT_PAYLOAD_MAX_CHARS = 3000  # ponytail: was 1000, reranker needs more context
 
 # Local alias to keep the type narrow without importing the dataclass.
 DocumentId = uuid.UUID
@@ -60,8 +60,10 @@ class IndexingPipeline:
         """Chunk + embed + upsert one version. Returns chunks indexed."""
         version = await self._doc_repo.get_version(self._session, document_version_id)
         if version is None:
-            return 0
+            raise ValueError(f"DocumentVersion not found: {document_version_id}")
         document = version.document
+        if getattr(document, "status", None) == "deactivated":
+            raise ValueError(f"Document is deactivated: {document.id} (version {document_version_id})")
 
         chunks = await self._chunker.chunk_version(self._session, document_version_id)
         if not chunks:
@@ -71,12 +73,7 @@ class IndexingPipeline:
         vectors = self._embed.embed(texts)
 
         now_iso = datetime.now(UTC).isoformat()
-        source_type = "unknown"
-        try:
-            if document.source is not None:
-                source_type = document.source.provider
-        except Exception:
-            source_type = "unknown"
+        source_type = document.source.provider if document.source is not None else "unknown"
         points: list[dict[str, object]] = []
         for chunk, vector in zip(chunks, vectors, strict=True):
             points.append(
@@ -88,12 +85,15 @@ class IndexingPipeline:
                     "version_id": str(document_version_id),
                     "chunk_text": chunk.content_text[:CHUNK_TEXT_PAYLOAD_MAX_CHARS],
                     "doc_title": document.title,
+                    "external_id": document.external_id,
                     "block_start": chunk.start_block_index,
                     "block_end": chunk.end_block_index,
                     "source_type": source_type,
                     "status": "active",
                     "created_at": now_iso,
                     "corpus_id": str(document.corpus_id) if document.corpus_id else None,
+                    "block_type": chunk.metadata.get("block_types", ["text"])[0] if chunk.metadata.get("block_types") else "text",
+                    "token_count": chunk.token_count,
                 }
             )
 
@@ -127,7 +127,13 @@ class IndexingPipeline:
         document_id: DocumentId,
         new_version_id: DocumentVersionId,
     ) -> None:
-        """Index the new version, then deactivate every older one for the doc."""
+        """Index the new version, then deactivate every older one for the doc.
+
+        Acquires a row-level write lock on the document before indexing so
+        concurrent index / deactivate jobs for the same document serialize
+        cleanly (P4 dedup fix).
+        """
+        await self._doc_repo.lock_document(self._session, document_id)
         await self.index_version(new_version_id)
         old_versions = await self._doc_repo.list_versions_for_document(self._session, document_id)
         for old in old_versions:
