@@ -217,6 +217,16 @@ class DocumentRepository:
                 "document_id": str(document.id),
             },
         )
+        await JobQueueManager(session).enqueue_job(
+            workspace_id=workspace_id,
+            job_type="extract_memory",
+            payload={
+                "workspace_id": str(workspace_id),
+                "document_id": str(document.id),
+                "document_version_id": str(version.id),
+            },
+            idempotency_key=f"extract_memory:{version.id}",
+        )
 
         return document
 
@@ -276,6 +286,16 @@ class DocumentRepository:
                 "document_version_id": str(version.id),
                 "document_id": str(document.id),
             },
+        )
+        await JobQueueManager(session).enqueue_job(
+            workspace_id=workspace_id,
+            job_type="extract_memory",
+            payload={
+                "workspace_id": str(workspace_id),
+                "document_id": str(document.id),
+                "document_version_id": str(version.id),
+            },
+            idempotency_key=f"extract_memory:{version.id}",
         )
 
         return document

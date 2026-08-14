@@ -103,11 +103,9 @@ async def test_recall_at_10() -> None:
     assert result["count"] == 2
     assert result["recall_at_10"] == 0.5
     assert result["details"][0]["correct"] is True
-    assert result["details"][0]["rank"] == 3
+    assert result["details"][0]["first_rank"] == 3
     assert result["details"][1]["correct"] is False
-    assert result["details"][1]["rank"] is None
-
-
+    assert result["details"][1]["first_rank"] is None
 @pytest.mark.asyncio
 async def test_mrr() -> None:
     # Two questions: q1 correct at rank 1, q2 correct at rank 5.
@@ -197,13 +195,12 @@ async def test_evaluate_question_shape() -> None:
     assert r["retrieved_ids"] == ["c1"]
     assert r["retrieved_scores"] == [0.9]
     assert r["correct"] is True
-    assert r["rank"] == 1
+    assert r["first_rank"] == 1
 
 
 @pytest.mark.asyncio
 async def test_negative_question_target_none() -> None:
-    """Out-of-corpus questions with target_source='None' always score
-    as not found, regardless of what the pipeline returns."""
+    """Out-of-corpus questions with target_source='None' score as correct=None."""
     pipeline = _make_pipeline({"q": [_hit("c1", 0.9, {"external_id": "any.md"})]})
     runner = EvaluationRunner(pipeline)
     q = {
@@ -214,5 +211,5 @@ async def test_negative_question_target_none() -> None:
         "expected_answer": "INSUFFICIENT_EVIDENCE",
     }
     r = await runner.evaluate_question(q)
-    assert r["correct"] is False
-    assert r["rank"] is None
+    assert r["correct"] is None
+    assert r["first_rank"] is None

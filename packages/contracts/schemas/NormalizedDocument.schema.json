@@ -135,18 +135,22 @@
   },
   "properties": {
     "document_id": {
+      "minLength": 1,
       "title": "Document Id",
       "type": "string"
     },
     "workspace_id": {
+      "minLength": 1,
       "title": "Workspace Id",
       "type": "string"
     },
     "source_id": {
+      "minLength": 1,
       "title": "Source Id",
       "type": "string"
     },
     "title": {
+      "minLength": 1,
       "title": "Title",
       "type": "string"
     },
@@ -157,6 +161,7 @@
       "$ref": "#/$defs/DocumentLocator"
     },
     "active_version_id": {
+      "minLength": 1,
       "title": "Active Version Id",
       "type": "string"
     },

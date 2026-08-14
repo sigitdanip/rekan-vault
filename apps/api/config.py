@@ -88,5 +88,15 @@ class Settings(BaseSettings):
     # a query, trigger a doc_title text filter.  Set per-corpus.
     RV_TITLE_FILTER_FRAGMENTS: str = ""
 
+    # Phase 5: LLM Extraction Provider (RV-DEC-P5-0002)
+    RV_LLM_PROVIDER: str = "openai"
+    RV_LLM_BASE_URL: str = "https://api.groq.com/openai/v1"
+    RV_LLM_API_KEY: str = ""
+    RV_EXTRACTION_MODEL: str = "llama-3.3-70b-versatile"
+    RV_LLM_TIMEOUT_SECONDS: int = 60
+    RV_LLM_MAX_RETRIES: int = 3
+    RV_MODEL_MAX_CONCURRENCY: int = 2
+    RV_LLM_DISABLE_THINKING: bool = False
+
 
 settings = Settings()

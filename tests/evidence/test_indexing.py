@@ -74,6 +74,7 @@ def _make_pipeline() -> tuple[IndexingPipeline, dict[str, Any]]:
     qdrant.delete_by_filter = AsyncMock()
     doc_repo.get_version = AsyncMock()
     doc_repo.list_versions_for_document = AsyncMock()
+    doc_repo.lock_document = AsyncMock()
 
     pipeline = IndexingPipeline(
         session=session,

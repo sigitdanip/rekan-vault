@@ -14,6 +14,7 @@ from sqlalchemy import (
     Boolean,
     Computed,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -267,7 +268,10 @@ class ContentBlock(Base):
     block_type: Mapped[str] = mapped_column(String(64), default="text", nullable=False)
     content_text: Mapped[str] = mapped_column(Text, nullable=False)
     content_tsvector: Mapped[Any] = mapped_column(
-        "content_tsvector", TSVECTOR(), Computed("to_tsvector('simple'::regconfig, content_text)", persisted=True), nullable=True
+        "content_tsvector",
+        TSVECTOR(),
+        Computed("to_tsvector('simple'::regconfig, content_text)", persisted=True),
+        nullable=True,
     )  # ponytail: GENERATED column managed by migration 0002; ORM reads only
     metadata_: Mapped[dict[str, Any]] = mapped_column("metadata", JSONB, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
@@ -464,4 +468,112 @@ class AuditLog(Base):
     idempotency_key: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     changes: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+# ------------------------------------------------------------------------------
+# 6. Typed Memory & Review Queue (Phase 5, RV-DEC-P5-0001)
+# ------------------------------------------------------------------------------
+
+
+class TypedMemory(Base):
+    """Authoritative storage for 18 typed memory entities."""
+
+    __tablename__ = "typed_memories"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    memory_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    impact: Mapped[str] = mapped_column(String(32), default="MEDIUM", nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    review_status: Mapped[str] = mapped_column(String(32), default="pending_review", nullable=False, index=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    created_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("actors.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    prompt_version: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    evidence_bindings: Mapped[list["MemoryEvidenceBinding"]] = relationship(
+        "MemoryEvidenceBinding", back_populates="memory", cascade="all, delete-orphan"
+    )
+    review_entries: Mapped[list["MemoryReviewItem"]] = relationship(
+        "MemoryReviewItem", back_populates="memory", cascade="all, delete-orphan"
+    )
+
+
+class MemoryEvidenceBinding(Base):
+    """Junction table linking memories to PostgreSQL chunk_id evidence locators."""
+
+    __tablename__ = "memory_evidence_bindings"
+    __table_args__ = (Index("idx_memory_bindings_memory_chunk", "memory_id", "chunk_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    memory_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("typed_memories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    chunk_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    version_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    memory: Mapped[TypedMemory] = relationship("TypedMemory", back_populates="evidence_bindings")
+
+
+class MemoryReviewItem(Base):
+    """Review queue audit records for human approval, edit, dispute, or rejection."""
+
+    __tablename__ = "memory_review_items"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    memory_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("typed_memories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    reviewer_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("actors.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    action: Mapped[str] = mapped_column(String(32), nullable=False)  # approve, correct, dispute, reject, defer
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    diff_payload: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
+    reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    memory: Mapped[TypedMemory] = relationship("TypedMemory", back_populates="review_entries")
+
+
+class ExtractionFailure(Base):
+    """Chunk-level extraction failure record for retry/observability.
+
+    One row per chunk whose LLM extraction failed after retries + salvage.
+    Lets a re-run sweep the gaps instead of silently missing knowledge.
+    """
+
+    __tablename__ = "extraction_failures"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("document_versions.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    chunk_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    error_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)

@@ -54,6 +54,10 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 | RV-DEC-P4-0002 | Embedding model: BAAI/bge-m3 (1024-dim, multilingual English, Indonesian, Javanese) | P4 | Approved | 2026-08-06 | `RekanVault_ADR_P4_0002_multilingual-embedding-model.md` |
 | RV-DEC-P4-0003 | Reranker: BAAI/bge-reranker-v2-m3 cross-encoder on top 20 candidates | P4 | Approved | 2026-08-06 | `RekanVault_ADR_P4_0003_cross-encoder-reranker.md` |
 | RV-DEC-P4-0004 | Chunk policy: Structure-first ~450 tokens with block locators (`doc_id#v<n>#chunk_<seq>`) | P4 | Approved | 2026-08-06 | `RekanVault_ADR_P4_0004_structure-first-chunking-policy.md` |
+| RV-DEC-P5-0001 | Typed memory schemas & review policy: 18 Pydantic V2 schemas (`extra="forbid"`), review queue routing | P5 | Approved | 2026-08-12 | `RekanVault_ADR_P5_0001_typed-memory-schemas-and-review-policy.md` |
+| RV-DEC-P5-0002 | LLM provider abstraction: OpenAI-compatible wrapper + immutable prompt registry | P5 | Approved | 2026-08-12 | `RekanVault_ADR_P5_0002_llm-provider-abstraction-and-prompt-registry.md` |
+| RV-DEC-P5-0003 | Direct-write templates: 6 contribution templates (`Decision`, `Idea`, etc.) with audit trail | P5 | Approved | 2026-08-12 | `RekanVault_ADR_P5_0003_direct-write-templates-and-audit-discipline.md` |
+| RV-DEC-P5-0004 | Memory support lifecycle: Junction bindings, re-evaluation on source edit/delete | P5 | Approved | 2026-08-12 | `RekanVault_ADR_P5_0004_memory-lifecycle-re-evaluation.md` |
 
 ## How this index works
 
@@ -64,7 +68,7 @@ Example: `RekanVault_ADR_P0_0001_repo-private-internal-use.md`
 
 ## Open / not yet recorded
 
-All P0, P1, and P2 decisions are now recorded and approved as of RV-DEC-P2-0006 (2026-08-02). Remaining known upcoming decisions belong to P3+:
+All P0 through P5 decisions are now recorded and approved as of RV-DEC-P5-0004 (2026-08-12). Remaining known upcoming decisions belong to P6+:
 
 ## Cross-ADR alignment log
 

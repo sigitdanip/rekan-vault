@@ -935,19 +935,19 @@ Prompt versions, temperature, schema, confidence, and review rules are versioned
 
 ### To-dos
 
-- [ ] Implement schemas for Fact, Claim, Decision, Policy, Procedure, Event, Project, Task, Idea, Risk, Assumption, Lesson, Metric, Person, Organization, Topic, Asset, and Skill.
-- [ ] Implement direct-write API and initial templates.
-- [ ] Create extraction prompt registry with immutable versions.
-- [ ] Validate structured outputs and reject unknown fields.
-- [ ] Attach evidence at claim/field granularity where practical.
-- [ ] Implement confidence, ambiguity, impact, and contradiction signals.
-- [ ] Implement auto-commit allowlist and mandatory-review rules.
-- [ ] Build Review API/UI for approve, correct, dispute, reject, and defer.
-- [ ] Implement source diff to affected binding detection.
-- [ ] Implement unsupported, inaccessible, superseded, and invalidated states.
-- [ ] Add prompt-injection boundary: source text is data, never instructions.
-- [ ] Record token use, latency, provider/model, and redacted failure diagnostics.
-- [ ] Build labeled extraction evaluation set.
+- [x] Implement schemas for Fact, Claim, Decision, Policy, Procedure, Event, Project, Task, Idea, Risk, Assumption, Lesson, Metric, Person, Organization, Topic, Asset, and Skill. (`rekanvault/memory/models.py`)
+- [x] Implement direct-write API and initial templates. (`apps/api/routers/direct_write.py` — 6 POST endpoints)
+- [x] Create extraction prompt registry with immutable versions. (`rekanvault/memory/prompts.py` — v1.0.0 shared system prompt covering all 18 types)
+- [x] Validate structured outputs and reject unknown fields. (`models.py` `extra="forbid"` + `extraction.py` two-pass validation)
+- [x] Attach evidence at claim/field granularity where practical. (`BaseTypedMemory.evidence_chunk_ids` + `memory_evidence_bindings` junction)
+- [x] Implement confidence, ambiguity, impact, and contradiction signals. (`determine_review_status` in `models.py`, confidence field on all types)
+- [x] Implement auto-commit allowlist and mandatory-review rules. (`HIGH_IMPACT_MEMORY_TYPES` set: Decision/Policy/Risk → PENDING_REVIEW)
+- [x] Build Review API/UI for approve, correct, dispute, reject, and defer. (`apps/api/routers/memory_review.py` — `POST /{memory_id}/review`)
+- [x] Implement source diff to affected binding detection. (`rekanvault/memory/lifecycle.py` — `handle_source_update`)
+- [x] Implement unsupported, inaccessible, superseded, and invalidated states. (`lifecycle.py` — UNSUPPORTED transitions on anchor loss)
+- [x] Add prompt-injection boundary: source text is data, never instructions. (`prompts.py` — system declares boundary; source in user message only)
+- [x] Record token use, latency, provider/model, and redacted failure diagnostics. (`LLMProvider.last_usage` TokenUsage + error mapping)
+- [x] Build labeled extraction evaluation set. (`docs/REKANVAULT_EXTRACTION_GOLDEN_SET.md` — 18 gold test cases across all 18 memory types + `extraction_runner.py`)
 
 ### Test plan
 
@@ -971,15 +971,14 @@ Each line carries a stable ID. Acceptance criteria are defined in `RekanVault_Te
 
 `P5-GATE`: enabled memory types meet agreed extraction precision; 100% of verified source-derived memories resolve to valid authorized evidence; update/delete/replay behavior is correct.
 
-###  Open Decisions (Delete section if decision already recorded as ADR)  
+### Recorded Decisions (Phase 5 Locked ADRs)
 
-| Decision | Recommended default | Needed by | Effect |
-|---|---|---|---|
-| Initial auto-commit | Only deterministic source metadata and low-impact entity mentions; decisions/policies/risks always reviewed | P5 | Trust and review load |
-| Initial direct templates | Decision, Idea, Project, Risk, Lesson, Procedure | P5 UI | First practical workflows |
-| Extraction model | Select from currently active Groq models using labeled extraction benchmark | P5 | Cost/free limits and quality |
-| Historical unsupported memory | Visible to authorized reviewers as unsupported; hidden from current-answer default | P5 | Audit vs confusion |
-| High-impact categories | Decision, Policy, Permission, Risk, Entity merge, Skill mastery | P5 | Mandatory review |
+All Phase 5 architecture decisions are locked as approved ADRs:
+
+- **18 Typed Memory Schemas & Review Queue Policy (`RV-DEC-P5-0001`)**: 18 Pydantic V2 schemas with `extra="forbid"`, PostgreSQL evidence anchor bindings (`chunk_id`), and mandatory review queue routing for high-impact/low-confidence items.
+- **LLM Provider Abstraction & Prompt Registry (`RV-DEC-P5-0002`)**: RekanVault `openai` SDK wrapper (`RV_LLM_PROVIDER`, `RV_LLM_BASE_URL`, `RV_LLM_API_KEY`, `RV_EXTRACTION_MODEL`), immutable versioned prompt registry, and prompt-injection data boundaries (Risk R-004).
+- **Direct-Write Templates & Audit Discipline (`RV-DEC-P5-0003`)**: 6 contribution templates (`Decision`, `Idea`, `Project`, `Risk`, `Lesson`, `Procedure`) with confidence 1.0, author attribution, and structured audit log events (`rekanvault.contracts.audit`).
+- **Memory Support Lifecycle & Re-evaluation (`RV-DEC-P5-0004`)**: `memory_evidence_bindings` junction tracking, single-locator updates on source edit (`P5-T5`), and transition to `unsupported` status when 0 evidence anchors remain (`P5-T6`).
 
 ---
 

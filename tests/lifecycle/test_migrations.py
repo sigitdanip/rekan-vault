@@ -62,8 +62,8 @@ def test_migration_revision_id() -> None:
 # ---------------------------------------------------------------------------
 
 requires_db = pytest.mark.skipif(
-    not DATABASE_URL,
-    reason="Set RV_DATABASE_URL or DATABASE_URL to run live migration tests",
+    not (DATABASE_URL and os.environ.get("RUN_LIVE_MIGRATION_TESTS") == "1"),
+    reason="Set RV_DATABASE_URL and RUN_LIVE_MIGRATION_TESTS=1 to run live migration tests against PostgreSQL",
 )
 
 

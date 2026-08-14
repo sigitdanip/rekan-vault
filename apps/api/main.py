@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from apps.api.config import settings
+from apps.api.routers.direct_write import router as direct_write_router
+from apps.api.routers.memory_review import router as memory_review_router
 from apps.api.routers.search import router as search_router
 from apps.api.routers.sources import router as sources_router
 from rekanvault.contracts.errors import ErrorCode, ErrorDetail, ErrorEnvelope, RekanVaultError
@@ -98,6 +100,8 @@ async def version_info() -> dict[str, Any]:
 
 app.include_router(sources_router, prefix="/api/v1/sources", tags=["Sources"])
 app.include_router(search_router, prefix="/api/v1", tags=["Search"])
+app.include_router(memory_review_router, prefix="/api/v1/memories", tags=["Memory"])
+app.include_router(direct_write_router, prefix="/api/v1/memories", tags=["Memory"])
 
 
 def export_openapi_schema(output_path: Path) -> None:

@@ -42,6 +42,10 @@ dependencies = [
     "transformers>=4.43.0",
     "torch>=2.3.0",
     "tiktoken>=0.7.0",
+    # P5 — LLM extraction provider (RV-DEC-P5-0002); OpenAI-compatible SDK
+    "openai>=1.40.0",
+    # P5 — JSON recovery for malformed LLM output (retry ladder in llm.py)
+    "json-repair>=0.40.0",
 ]
 
 

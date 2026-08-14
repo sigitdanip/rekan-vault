@@ -212,9 +212,8 @@ async def test_upsert_changed_content_creates_new_version_with_incremented_numbe
     get_result.scalar_one_or_none.return_value = existing
     latest_result = MagicMock()
     latest_result.scalar_one_or_none.return_value = prior_version
-    # 2 selects: get_by_external_id, _latest_version (in upsert). The
-    # version_number is computed from this same row in _insert_new_version.
-    session.execute.side_effect = [get_result, latest_result]
+    # 3 selects/executes: get_by_external_id, _latest_version, enqueue_job.
+    session.execute.side_effect = [get_result, latest_result, MagicMock()]
 
     changed = _normalized(native_id="beta", content="new-and-different")
     returned = await repo.upsert_document(

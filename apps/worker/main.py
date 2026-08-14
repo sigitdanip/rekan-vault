@@ -25,13 +25,16 @@ from typing import Any, Awaitable, Callable
 
 import rekanvault.storage.database as _db_module
 from apps.api.config import settings
+from rekanvault.contracts.errors import RekanVaultError
 from rekanvault.evidence.chunker import Chunker
 from rekanvault.evidence.embedding import EmbeddingService
 from rekanvault.evidence.indexing import IndexingPipeline
+from rekanvault.memory.extraction import MemoryExtractor
 from rekanvault.sources.manager import SourceManager
 from rekanvault.storage.database import init_db
 from rekanvault.storage.document_repo import DocumentRepository
 from rekanvault.storage.jobs import JobQueueManager
+from rekanvault.storage.memory_repo import MemoryRepository
 from rekanvault.storage.qdrant import QdrantStore
 
 # Job handler signature: ``async (session, payload) -> None``.
@@ -129,12 +132,69 @@ async def _handle_deactivate_document(session: Any, payload: dict[str, Any]) -> 
     await doc_repo.deactivate_document(session, document_id)
 
 
+async def _handle_extract_memory(session: Any, payload: dict[str, Any]) -> None:
+    """Extract typed memories from a document version's chunks.
+
+    Reads the version's chunks via :class:`Chunker`, runs
+    :class:`MemoryExtractor` over each chunk, and persists the typed
+    memories through :class:`MemoryRepository`. Per-chunk failures are
+    swallowed so one bad chunk doesn't blow the whole job — the dispatcher
+    handles job-level failure.
+    """
+    document_id = uuid.UUID(str(payload["document_id"]))
+    document_version_id = uuid.UUID(str(payload["document_version_id"]))
+    workspace_id = uuid.UUID(str(payload["workspace_id"]))
+
+    doc_repo = DocumentRepository()
+    version = await doc_repo.get_version(session, document_version_id)
+    if version is None:
+        raise RekanVaultError(
+            message=f"Version not found: {document_version_id}",
+            target="extract_memory",
+        )
+
+    chunker = Chunker(repo=doc_repo)
+    chunks = await chunker.chunk_version(session, document_version_id)
+
+    extractor = MemoryExtractor()
+    memory_repo = MemoryRepository(session)
+
+    for chunk in chunks:
+        try:
+            memories = await extractor.extract(
+                chunk_text=chunk.content_text,
+                chunk_id=chunk.chunk_id,
+                document_id=document_id,
+                workspace_id=workspace_id,
+            )
+            for memory in memories:
+                await memory_repo.create_memory(
+                    workspace_id,
+                    memory,
+                    document_id=document_id,
+                    version_id=document_version_id,
+                )
+        except Exception as exc:
+            # Per-chunk failure: record it for retry, then skip so one bad
+            # chunk doesn't kill the whole extraction job.
+            await memory_repo.record_extraction_failure(
+                workspace_id=workspace_id,
+                document_id=document_id,
+                document_version_id=document_version_id,
+                chunk_id=chunk.chunk_id,
+                error_code=str(getattr(exc, "code", type(exc).__name__)),
+                error_message=str(exc)[:512],
+            )
+            continue
+
+
 JOB_HANDLERS: dict[str, JobHandler] = {
     "sync_source": _handle_sync_source,
     "scan_source": _handle_scan_source,
     "reconcile_source": _handle_reconcile_source,
     "index_document_version": _handle_index_document_version,
     "deactivate_document": _handle_deactivate_document,
+    "extract_memory": _handle_extract_memory,
 }
 
 
@@ -180,7 +240,9 @@ class WorkerDaemon:
                 init_db()
             except Exception as exc:  # noqa: BLE001 — startup is best-effort
                 print(f"[Worker {self.worker_id}] WARNING: DB init failed: {exc}")
-                print(f"[Worker {self.worker_id}]   The worker will poll indefinitely. All job claims/commits will fail.")
+                print(
+                    f"[Worker {self.worker_id}]   The worker will poll indefinitely. All job claims/commits will fail."
+                )
 
         # Best-effort Qdrant collection init. Uses the module-level
         # singleton so ensure_collection and subsequent index jobs
