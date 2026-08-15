@@ -136,6 +136,7 @@ class RetrievalPipeline:
         top_k: int = 20,
         filters: qmodels.Filter | None = None,
         skip_rerank: bool = False,  # ponytail: skip cross-encoder on low-RAM machines
+        ablate_title_hacks: bool = False,  # diagnostic: measure title-boost/fragment hack contribution
     ) -> list[dict[str, Any]]:
         """End-to-end hybrid retrieval. Returns scored, ranked, deduplicated
         chunk dicts in score-descending order.
@@ -152,11 +153,15 @@ class RetrievalPipeline:
         # Augment explicit filters with query-inferred path/type constraints
         # so FILTER-style queries ("pdf files in mujaddid") scope the dense
         # leg to only docs whose title contains the right fragments.
-        inferred = _infer_title_filter(query)
+        # Ablation: treat inferred conditions as empty to isolate the core
+        # hybrid pipeline's contribution to Recall@10.
+        inferred = [] if ablate_title_hacks else _infer_title_filter(query)
         merged_filters = _merge_filters(filters, inferred)
 
-        lexical_hits = await self.lexical_search(query, workspace_id, limit=lexical_limit)
-        dense_hits = await self.dense_search(query, workspace_id, limit=dense_limit, filters=merged_filters)
+        lexical_hits = await self.lexical_search(query, workspace_id, limit=lexical_limit, ablate=ablate_title_hacks)
+        dense_hits = await self.dense_search(
+            query, workspace_id, limit=dense_limit, filters=merged_filters, ablate=ablate_title_hacks
+        )
 
         fused = self._rrf_fuse(lexical_hits, dense_hits, limit=rrf_limit)
 
@@ -171,7 +176,7 @@ class RetrievalPipeline:
             deduped = self._dedup_overlap(fused)
             return self._finalize(deduped)
 
-        reranked = await self._rerank(query, fused, top_k=top_k)
+        reranked = await self._rerank(query, fused, top_k=top_k, ablate=ablate_title_hacks)
         deduped = self._dedup_overlap(reranked)
         return self._finalize(deduped, rescue_pool=fused)
 
@@ -180,6 +185,7 @@ class RetrievalPipeline:
         query: str,
         workspace_id: uuid.UUID,
         limit: int = 40,
+        ablate: bool = False,
     ) -> list[dict[str, Any]]:
         """Standalone PostgreSQL lexical search. Returns dicts with at
         least ``chunk_id`` (block_id-as-chunk_id), ``content``, ``score``,
@@ -248,7 +254,7 @@ class RetrievalPipeline:
                     },
                 }
             )
-        return self._apply_title_boost(hits, query)
+        return hits if ablate else self._apply_title_boost(hits, query)
 
     async def dense_search(
         self,
@@ -256,6 +262,7 @@ class RetrievalPipeline:
         workspace_id: uuid.UUID,
         limit: int = 40,
         filters: qmodels.Filter | None = None,
+        ablate: bool = False,
     ) -> list[dict[str, Any]]:
         """Standalone Qdrant dense search. Workspace filter is merged into
         the caller's ``filters`` if not already present; Qdrant's payload
@@ -298,7 +305,7 @@ class RetrievalPipeline:
                     },
                 }
             )
-        return self._apply_title_boost(hits, query)
+        return hits if ablate else self._apply_title_boost(hits, query)
 
     # ---- fusion / rerank / dedup -----------------------------------------
 
@@ -362,6 +369,7 @@ class RetrievalPipeline:
         candidates: list[dict[str, Any]],
         *,
         top_k: int,
+        ablate: bool = False,
     ) -> list[dict[str, Any]]:
         """Cross-encoder rerank over candidate texts. Returns the
         ``top_k`` candidates (or all of them, whichever is fewer) with
@@ -388,7 +396,7 @@ class RetrievalPipeline:
             cand = dict(candidates[orig_idx])
             cand["score"] = float(score)
             reranked.append(cand)
-        return self._apply_title_boost(reranked, query)[:top_k]
+        return (reranked if ablate else self._apply_title_boost(reranked, query))[:top_k]
 
     @staticmethod
     def _dedup_overlap(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:

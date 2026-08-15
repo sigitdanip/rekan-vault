@@ -218,6 +218,7 @@ class EvaluationRunner:
         question: dict[str, Any],
         *,
         top_k: int = DEFAULT_TOP_K,
+        ablate_title_hacks: bool = False,
     ) -> dict[str, Any]:
         workspace_id = question.get("workspace_id")
         if workspace_id is None:
@@ -229,6 +230,7 @@ class EvaluationRunner:
             question["question"],
             workspace_id,
             top_k=top_k,
+            ablate_title_hacks=ablate_title_hacks,
         )
         target = question.get("target_source", "")
         category = question.get("category", "")
@@ -258,10 +260,11 @@ class EvaluationRunner:
         questions: list[dict[str, Any]],
         *,
         top_k: int = DEFAULT_TOP_K,
+        ablate_title_hacks: bool = False,
     ) -> dict[str, Any]:
         details: list[dict[str, Any]] = []
         for q in questions:
-            details.append(await self.evaluate_question(q, top_k=top_k))
+            details.append(await self.evaluate_question(q, top_k=top_k, ablate_title_hacks=ablate_title_hacks))
 
         count = len(details)
         if count == 0:
@@ -270,6 +273,7 @@ class EvaluationRunner:
                 "mrr": 0.0,
                 "ndcg_at_10": 0.0,
                 "count": 0,
+                "category_breakdown": {},
                 "details": details,
             }
 
@@ -278,6 +282,14 @@ class EvaluationRunner:
 
         hits = sum(1 for d in scorable if d["correct"] is True)
         recall = hits / scorable_count if scorable_count else 0.0
+
+        category_breakdown: dict[str, dict[str, int]] = {}
+        for d in scorable:
+            cat = d.get("category", "") or "UNCATEGORIZED"
+            entry = category_breakdown.setdefault(cat, {"hits": 0, "total": 0})
+            entry["total"] += 1
+            if d["correct"] is True:
+                entry["hits"] += 1
 
         rr_sum = 0.0
         dcg_sum = 0.0
@@ -310,6 +322,7 @@ class EvaluationRunner:
             "count": count,
             "scorable_count": scorable_count,
             "source_type_counts": source_type_counts,
+            "category_breakdown": category_breakdown,
             "details": details,
         }
 
@@ -366,7 +379,8 @@ async def _run_cli() -> None:
     async for session in get_db_session():
         pipeline = RetrievalPipeline(session=session, embed=embed, qdrant=qdrant)
         runner = EvaluationRunner(pipeline)
-        result = await runner.evaluate_set(questions, top_k=args.top_k)
+        ablate_title_hacks = os.environ.get("RV_ABLATE_TITLE_HACKS", "").strip().lower() in ("1", "true", "yes", "on")
+        result = await runner.evaluate_set(questions, top_k=args.top_k, ablate_title_hacks=ablate_title_hacks)
 
         print(f"\n{'='*60}")
         print(f"Results — {result['count']} questions")
@@ -374,6 +388,16 @@ async def _run_cli() -> None:
         print(f"Recall@10:  {result['recall_at_10']:.4f}")
         print(f"MRR:        {result['mrr']:.4f}")
         print(f"nDCG@10:    {result['ndcg_at_10']:.4f}")
+
+        cb = result.get("category_breakdown", {})
+        if cb:
+            print("\nPer-category Recall@10:")
+            for cat in sorted(cb):
+                entry = cb[cat]
+                total = entry["total"]
+                hits = entry["hits"]
+                rate = hits / total if total else 0.0
+                print(f"  {cat}: {hits}/{total} ({rate:.0%})")
 
         stc = result.get("source_type_counts", {})
         if stc:

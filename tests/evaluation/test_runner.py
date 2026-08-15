@@ -27,7 +27,9 @@ def _make_pipeline(hits_by_question: dict[str, list[dict[str, Any]]]) -> Retriev
     """Build a ``RetrievalPipeline`` whose ``search`` returns the hit
     list keyed by the question text."""
     pipeline = RetrievalPipeline.__new__(RetrievalPipeline)  # bypass __init__
-    pipeline.search = AsyncMock(side_effect=lambda q, _ws, top_k=10: hits_by_question.get(q, []))
+    pipeline.search = AsyncMock(
+        side_effect=lambda q, _ws, top_k=10, ablate_title_hacks=False: hits_by_question.get(q, [])
+    )
     return pipeline
 
 
@@ -173,7 +175,55 @@ async def test_empty_questions() -> None:
     assert result["mrr"] == 0.0
     assert result["ndcg_at_10"] == 0.0
     assert result["count"] == 0
+    assert result["category_breakdown"] == {}
     assert result["details"] == []
+
+
+@pytest.mark.asyncio
+async def test_category_breakdown() -> None:
+    """Per-category hits/total is computed over scorable questions only."""
+    target = "documents/foo.md"
+    hits_q1 = [_hit("c1", 0.9, {"external_id": "documents/foo.md"})]
+    hits_q2 = [_hit("c1", 0.9)]  # miss
+    hits_q3 = [_hit("c1", 0.9, {"external_id": "documents/foo.md"})]
+    pipeline = _make_pipeline({"q1": hits_q1, "q2": hits_q2, "q3": hits_q3})
+    runner = EvaluationRunner(pipeline)
+
+    result = await runner.evaluate_set(
+        [
+            {"id": "Q-001", "category": "EXACT", "question": "q1", "target_source": target, "expected_answer": "x"},
+            {"id": "Q-002", "category": "EXACT", "question": "q2", "target_source": target, "expected_answer": "x"},
+            {"id": "Q-003", "category": "ID_SEMANTIC", "question": "q3", "target_source": target, "expected_answer": "x"},
+        ]
+    )
+
+    assert result["category_breakdown"] == {
+        "EXACT": {"hits": 1, "total": 2},
+        "ID_SEMANTIC": {"hits": 1, "total": 1},
+    }
+
+
+@pytest.mark.asyncio
+async def test_evaluate_set_threads_ablate_title_hacks() -> None:
+    """ablate_title_hacks must be forwarded to pipeline.search."""
+    seen: list[bool] = []
+    pipeline = RetrievalPipeline.__new__(RetrievalPipeline)
+    pipeline.search = AsyncMock(
+        side_effect=lambda q, _ws, top_k=10, ablate_title_hacks=False: seen.append(ablate_title_hacks) or []
+    )
+    runner = EvaluationRunner(pipeline)
+
+    await runner.evaluate_set(
+        [{"id": "Q-001", "category": "EXACT", "question": "q1", "target_source": "p.md", "expected_answer": "x"}],
+        ablate_title_hacks=True,
+    )
+    assert seen == [True]
+
+    seen.clear()
+    await runner.evaluate_set(
+        [{"id": "Q-001", "category": "EXACT", "question": "q1", "target_source": "p.md", "expected_answer": "x"}]
+    )
+    assert seen == [False]
 
 
 @pytest.mark.asyncio

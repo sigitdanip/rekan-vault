@@ -18,7 +18,7 @@ from qdrant_client import AsyncQdrantClient
 
 from apps.api.config import Settings
 from rekanvault.evidence.embedding import EmbeddingService
-from rekanvault.evidence.retrieval import RetrievalPipeline
+from rekanvault.evidence.retrieval import EXACT_TITLE_MATCH_BONUS, TITLE_BOOST_PER_WORD, RetrievalPipeline
 from rekanvault.storage.qdrant import QdrantStore
 
 # ---------- helpers --------------------------------------------------------
@@ -612,3 +612,102 @@ async def test_search_empty_inputs() -> None:
     results = await pipeline.search("anything", uuid.uuid4(), top_k=5)
     assert results == []
     rerank_mock.assert_not_called()
+
+
+# ---------- ablation --------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_lexical_search_ablate_skips_title_boost() -> None:
+    """ablate=True returns raw ts_rank scores; the default (False) applies
+    the title boost, so scores differ when query words hit doc_title."""
+    settings = _settings()
+    qdrant, _ = _qdrant_with_mock(settings)
+    embed, _, _ = _embed_with_mocks()
+    workspace_id = uuid.uuid4()
+    doc_id = str(uuid.uuid4())
+    version_id = str(uuid.uuid4())
+
+    row = _lexical_row(content_text="alpha", document_id=doc_id, version_id=version_id, rank=0.5)
+    row["doc_title"] = "alpha beta gamma"
+    session = _make_session_with_rows([row])
+
+    pipeline = RetrievalPipeline(session, embed, qdrant)
+    boosted = await pipeline.lexical_search("alpha beta", workspace_id, limit=10)
+    raw = await pipeline.lexical_search("alpha beta", workspace_id, limit=10, ablate=True)
+
+    assert raw[0]["score"] == 0.5
+    assert boosted[0]["score"] == pytest.approx(0.5 + 2 * TITLE_BOOST_PER_WORD + EXACT_TITLE_MATCH_BONUS)
+
+
+@pytest.mark.asyncio
+async def test_rerank_ablate_skips_title_boost_keeps_slicing() -> None:
+    """ablate=True keeps the cross-encoder's raw scores and still slices to
+    top_k; the default (False) re-applies the exact-title boost."""
+    settings = _settings()
+    qdrant, _ = _qdrant_with_mock(settings)
+    embed, _, rerank_mock = _embed_with_mocks()
+    session = AsyncMock()
+
+    candidates = [
+        {
+            "chunk_id": "a",
+            "content": "first",
+            "score": 0.1,
+            "source": "both",
+            "document_id": "d",
+            "version_id": "v",
+            "block_start": 0,
+            "block_end": 0,
+            "metadata": {"doc_title": "first doc"},
+        },
+        {
+            "chunk_id": "b",
+            "content": "second",
+            "score": 0.2,
+            "source": "both",
+            "document_id": "d2",
+            "version_id": "v",
+            "block_start": 0,
+            "block_end": 0,
+            "metadata": {},
+        },
+    ]
+    rerank_mock.return_value = [(0, 0.5), (1, 0.4)]
+
+    pipeline = RetrievalPipeline(session, embed, qdrant)
+    raw = await pipeline._rerank("first", candidates, top_k=2, ablate=True)
+    boosted = await pipeline._rerank("first", candidates, top_k=2)
+
+    assert [c["chunk_id"] for c in raw] == ["a", "b"]
+    assert raw[0]["score"] == 0.5
+    assert boosted[0]["score"] > 0.5
+
+
+@pytest.mark.asyncio
+async def test_search_ablate_skips_inferred_title_filter() -> None:
+    """A fragment-bearing query ("README") must NOT inject doc_title
+    conditions into the dense filter when ablate_title_hacks=True, and
+    MUST inject them by default."""
+    settings = _settings()
+    qdrant, mock_client = _qdrant_with_mock(settings)
+    embed, _, _ = _embed_with_mocks()
+    workspace_id = uuid.uuid4()
+
+    session = _make_session_with_rows([])
+    response = MagicMock()
+    response.points = []
+    mock_client.query_points.return_value = response
+
+    pipeline = RetrievalPipeline(session, embed, qdrant)
+
+    await pipeline.search("the README file", workspace_id, top_k=5, ablate_title_hacks=True)
+    qp_filter = mock_client.query_points.await_args.kwargs["query_filter"]
+    ablated_keys = [getattr(c, "key", None) for c in qp_filter.must]
+    assert "doc_title" not in ablated_keys
+    assert "workspace_id" in ablated_keys
+
+    await pipeline.search("the README file", workspace_id, top_k=5)
+    qp_filter = mock_client.query_points.await_args.kwargs["query_filter"]
+    default_keys = [getattr(c, "key", None) for c in qp_filter.must]
+    assert "doc_title" in default_keys

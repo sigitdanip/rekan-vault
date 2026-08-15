@@ -1,0 +1,108 @@
+=== BASELINE (hacks ON) ===
+Loaded 166 questions from docs/REKANVAULT_GOLDEN_SET.md
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 26309.44it/s]
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 4429.75it/s]
+
+============================================================
+Results — 166 questions
+============================================================
+Recall@10:  0.8889
+MRR:        0.6544
+nDCG@10:    0.7583
+
+Per-category Recall@10:
+  CONFLICT: 8/12 (67%)
+  EN_SEMANTIC: 22/24 (92%)
+  EXACT: 22/22 (100%)
+  FILTER: 19/19 (100%)
+  ID_SEMANTIC: 23/24 (96%)
+  MULTIHOP: 10/13 (77%)
+  SYNTHESIS: 19/23 (83%)
+  TEMPORAL: 5/7 (71%)
+
+Source type breakdown:
+  google_drive        : 1025
+  notion              : 339
+  unknown             : 18
+sys:1: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <psycopg.AsyncConnection [INTRANS] (host=aws-0-ap-southeast-2.pooler.supabase.com port=6543 user=postgres.mnvwziwytqxyrvirhohm database=postgres) at 0x70939be91370>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+Loaded 42 questions from docs/REKANVAULT_GOLDEN_SET_NOTION.md
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 25161.06it/s]
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 5804.95it/s]
+
+============================================================
+Results — 42 questions
+============================================================
+Recall@10:  0.8947
+MRR:        0.7230
+nDCG@10:    0.7213
+
+Per-category Recall@10:
+  CONFLICT: 2/4 (50%)
+  EN_SEMANTIC: 5/5 (100%)
+  EXACT: 5/6 (83%)
+  FILTER: 4/4 (100%)
+  ID_SEMANTIC: 8/8 (100%)
+  MULTIHOP: 3/4 (75%)
+  SYNTHESIS: 4/4 (100%)
+  TEMPORAL: 3/3 (100%)
+
+Source type breakdown:
+  notion              : 301
+  google_drive        : 58
+  unknown             : 3
+sys:1: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <psycopg.AsyncConnection [INTRANS] (host=aws-0-ap-southeast-2.pooler.supabase.com port=6543 user=postgres.mnvwziwytqxyrvirhohm database=postgres) at 0x7da9672646b0>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+
+=== ABLATED (hacks OFF) ===
+Loaded 166 questions from docs/REKANVAULT_GOLDEN_SET.md
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 21693.34it/s]
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 5365.90it/s]
+
+============================================================
+Results — 166 questions
+============================================================
+Recall@10:  0.8333
+MRR:        0.5418
+nDCG@10:    0.6671
+
+Per-category Recall@10:
+  CONFLICT: 9/12 (75%)
+  EN_SEMANTIC: 19/24 (79%)
+  EXACT: 20/22 (91%)
+  FILTER: 12/19 (63%)
+  ID_SEMANTIC: 20/24 (83%)
+  MULTIHOP: 12/13 (92%)
+  SYNTHESIS: 22/23 (96%)
+  TEMPORAL: 6/7 (86%)
+
+Source type breakdown:
+  google_drive        : 1480
+  notion              : 157
+  unknown             : 23
+sys:1: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <psycopg.AsyncConnection [INTRANS] (host=aws-0-ap-southeast-2.pooler.supabase.com port=6543 user=postgres.mnvwziwytqxyrvirhohm database=postgres) at 0x788ee56b9bb0>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+Loaded 42 questions from docs/REKANVAULT_GOLDEN_SET_NOTION.md
+Loading weights:   0%|          | 0/391 [00:00<?, ?it/s]Loading weights: 100%|██████████| 391/391 [00:00<00:00, 27386.74it/s]
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 9347.74it/s]
+
+============================================================
+Results — 42 questions
+============================================================
+Recall@10:  0.7632
+MRR:        0.5067
+nDCG@10:    0.5241
+
+Per-category Recall@10:
+  CONFLICT: 2/4 (50%)
+  EN_SEMANTIC: 5/5 (100%)
+  EXACT: 6/6 (100%)
+  FILTER: 3/4 (75%)
+  ID_SEMANTIC: 8/8 (100%)
+  MULTIHOP: 0/4 (0%)
+  SYNTHESIS: 2/4 (50%)
+  TEMPORAL: 3/3 (100%)
+
+Source type breakdown:
+  notion              : 235
+  google_drive        : 179
+  unknown             : 4
+sys:1: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <psycopg.AsyncConnection [INTRANS] (host=aws-0-ap-southeast-2.pooler.supabase.com port=6543 user=postgres.mnvwziwytqxyrvirhohm database=postgres) at 0x7b2cd6b03e90>>, which will be dropped, as it cannot be safely terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+DONE
